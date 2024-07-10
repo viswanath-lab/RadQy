@@ -1,11 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 13 15:06:31 2024
-
-@author: Amir
-"""
-
-
+import SimpleITK as sitk
 import datetime
 import time
 import os
@@ -13,7 +6,7 @@ import sys
 import re
 import argparse
 import yaml
-import pydicom 
+import pydicom
 import numpy as np
 from itertools import accumulate
 from collections import Counter
@@ -31,9 +24,8 @@ from skimage.morphology import square
 from medpy.io import load
 from pathlib import Path
 from scipy.io import loadmat
-import warnings        
-warnings.filterwarnings("ignore")  
-
+import warnings
+warnings.filterwarnings("ignore")
 
 def func1(F, B, c, f, b):
     name = 'MEAN'
@@ -210,7 +202,6 @@ def func20(F, B, c, f, b):
     measure = float(fg_mu / (bg_mu + 1e-6))
     return name, measure
 
-
 def clean_value(number):
     if isinstance(number, (int, float)):
         number = '{:.2f}'.format(number)
@@ -223,38 +214,51 @@ def clean_value(number):
     number = np.array(number)
     return number
 
-def extract_tags(inf, tag_data):
+
+def extract_tags(image, tag_data, file_type='dicom', image_shape=None):
     non_tag_value = 'NA'
     pre_tags = pd.DataFrame.from_dict(tag_data, orient='index', columns=['Tag Abbreviation']).reset_index()
     pre_tags = pre_tags.rename(columns={'index': 'Tag Name'})
     pre_tags['Tag Abbreviation'] = pre_tags['Tag Abbreviation'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
     tags = pd.DataFrame(columns=['Tag', 'Value'])
+
+    available_tags = {}
+    if file_type == 'dicom':
+        available_tags = {tag: image.get(tag, non_tag_value) for tag in image.dir()}
+    elif file_type == 'mha':
+        available_tags = {tag: image.GetMetaData(tag) for tag in image.GetMetaDataKeys()}
+    else:
+        pass
+
     for i, row in pre_tags.iterrows():
         pre_tag = row['Tag Name']
         pre_tag = pre_tag.replace(" ", "")
-        try:
-            tag_value = inf.get(pre_tag,non_tag_value)
+        tag_value = available_tags.get(pre_tag, non_tag_value)
+
+        if pre_tag == "Rows" and tag_value == non_tag_value and image_shape is not None:
+            tag_value = image_shape[1]
+        if pre_tag == "Columns" and tag_value == non_tag_value and image_shape is not None:
+            tag_value = image_shape[2]
+
+        if tag_value != non_tag_value:
             tag_value = clean_value(tag_value)
-        except KeyError:
-            tag_value = non_tag_value
-        tag = row['Tag Abbreviation']
-        mul_tags = tag.split(',')
-        for j,k in enumerate(mul_tags):
-            if np.iterable(tag_value):
-                tag_value_j = tag_value[j] if j < len(tag_value) else non_tag_value
-            else:
-                tag_value_j = tag_value
-            new_row = {'Tag': k, 'Value': tag_value_j}
-            tags = pd.concat([tags, pd.DataFrame([new_row])], ignore_index=True)
+            tag = row['Tag Abbreviation']
+            mul_tags = tag.split(',')
+            for j, k in enumerate(mul_tags):
+                if np.iterable(tag_value):
+                    tag_value_j = tag_value[j] if j < len(tag_value) else non_tag_value
+                else:
+                    tag_value_j = tag_value
+                new_row = {'Tag': k, 'Value': tag_value_j}
+                tags = pd.concat([tags, pd.DataFrame([new_row])], ignore_index=True)            
     return tags
 
 
 def input_data(root):
     files = [str(Path(dirpath) / filename) for dirpath, _, filenames in os.walk(root)
-                  for filename in filenames
-                  if filename.endswith(('.dcm', '.mha', '.nii', '.gz', '.mat'))]
-        
-        
+             for filename in filenames
+             if filename.endswith(('.dcm', '.mha', '.nii', '.gz', '.mat'))]
+
     dicom_files = [i for i in files if i.endswith('.dcm')]
     mha_files = [i for i in files if i.endswith('.mha')]
     nifti_files = [i for i in files if i.endswith('.nii') or i.endswith('.gz')]
@@ -270,7 +274,7 @@ def input_data(root):
     nifti_subjects = [extract_subject_id(scan) for scan in nifti_files]
     mat_subjects = [extract_subject_id(scan) for scan in mat_files]
 
-    dicom_pre_subjects = [pydicom.dcmread(i).PatientID for i in dicom_files] 
+    dicom_pre_subjects = [pydicom.dcmread(i).PatientID for i in dicom_files]
     duplicateFrequencies_dicom = Counter(dicom_pre_subjects)
     dicom_subjects = list(duplicateFrequencies_dicom.keys())
 
@@ -294,52 +298,45 @@ def input_data(root):
     print(f'The number of participants is {len(df)}.')
     return df
 
-def volume(name, scans, subject_type, tag_data, middle_size = 100):
+def volume(name, scans, subject_type, tag_data, middle_size=100):
     volumes = []
     if subject_type == 'dicom':
-            # institution = Path(scans[0]).parent.parent.name
-            scans = scans[int(0.005 * len(scans) * (100 - middle_size)):int(0.005 * len(scans) * (100 + middle_size))]
-            inf = pydicom.dcmread(scans[0])
-            tags = extract_tags(inf, tag_data)
-            # new_row1 = {'Tag': 'NUM', 'Value': len(scans)}
-            # new_row2 = {'Tag': 'INS', 'Value': institution}
-            first_row = {'Tag': 'Participant ID', 'Value': f"{name}"}
-            # tags = pd.concat([tags, pd.DataFrame([new_row2])], ignore_index=True)
-            # tags = pd.concat([tags, pd.DataFrame([new_row1, new_row2])], ignore_index=True)
-            tags.loc[-1] = first_row
-            tags.index = tags.index + 1
-            tags = tags.sort_index()
-            tags = tags.set_index('Tag')['Value'].to_dict()
-            slices = [pydicom.read_file(s) for s in scans]
-            slices.sort(key=lambda x: int(x.InstanceNumber))
-            images = np.stack([s.pixel_array for s in slices])
-            images = images.astype(np.int64)
-            volumes.append((images, tags))
+        scans = scans[int(0.005 * len(scans) * (100 - middle_size)):int(0.005 * len(scans) * (100 + middle_size))]
+        inf = pydicom.dcmread(scans[0])
+        tags = extract_tags(inf, tag_data)
+        first_row = {'Tag': 'Participant ID', 'Value': f"{name}"}
+        tags.loc[-1] = first_row
+        tags.index = tags.index + 1
+        tags = tags.sort_index()
+        tags = tags.set_index('Tag')['Value'].to_dict()
+        slices = [pydicom.read_file(s) for s in scans]
+        slices.sort(key=lambda x: int(x.InstanceNumber))
+        images = np.stack([s.pixel_array for s in slices])
+        images = images.astype(np.int64)
+        volumes.append((images, tags))
     elif subject_type in ['mha', 'nifti']:
-            image_data, image_header = load(scans)
-            images = [image_data[:,:,i] for i in range(np.shape(image_data)[2])]
-            middle_index = len(images) // 2
-            slices_to_include = int(middle_size * 0.01 * len(images) / 2)
-            images = images[middle_index - slices_to_include: middle_index + slices_to_include]
-            images = np.stack(images, axis=0)
-            images = np.transpose(images, (0, 2, 1))
-            volumes.append(images)
+        image = sitk.ReadImage(scans)
+        image_array = sitk.GetArrayFromImage(image)
+        tags = extract_tags(image, tag_data, file_type=subject_type, image_shape=image_array.shape)
+        images = [image_array[i, :, :] for i in range(image_array.shape[0])]
+        middle_index = len(images) // 2
+        slices_to_include = int(middle_size * 0.01 * len(images) / 2)
+        images = images[middle_index - slices_to_include: middle_index + slices_to_include]
+        images = np.stack(images, axis=0)
+        volumes.append((images, tags))
     elif subject_type == 'mat':
-            images = loadmat(scans)['vol']
-            middle_index = len(images) // 2
-            slices_to_include = int(middle_size * 0.01 * len(images) / 2)
-            images = images[middle_index - slices_to_include: middle_index + slices_to_include]
-            images = np.transpose(images, (2, 0, 1))
-            volumes.append(images)
+        images = loadmat(scans)['vol']
+        tags = extract_tags(images, tag_data, file_type=subject_type, image_shape=images.shape)
+        middle_index = len(images) // 2
+        slices_to_include = int(middle_size * 0.01 * len(images) / 2)
+        images = images[middle_index - slices_to_include: middle_index + slices_to_include]
+        images = np.transpose(images, (2, 0, 1))
+        volumes.append((images, tags))
     return volumes
-
-
-
-
 
 class IQM(dict):
 
-    def __init__(self,v, participant, total_participants,  participant_index, subject_type, total_tags):
+    def __init__(self, v, participant, total_participants, participant_index, subject_type, total_tags):
         print(f'-------------- Participant {participant_index} out of {total_participants} with the {subject_type} type: {participant} --------------')
         dict.__init__(self)
         self["warnings"] = [] 
@@ -350,26 +347,28 @@ class IQM(dict):
             (maskfolder / participant).mkdir(parents=True, exist_ok=True)
         directory_path.mkdir(parents=True, exist_ok=True)
         self.addToPrintList(0, participant, "Participant", participant, 25)
+        count = 1
         for volume_data in v:
             if isinstance(volume_data, tuple) and len(volume_data) == 2:
                 total_metrics = total_tags + len(functions) + 2  # + 1 for NUM + 1 for INS
                 images = volume_data[0]
                 tags = volume_data[1]
-                for count,metric in enumerate(tags):
-                    if count != 0:
-                        value = tags[metric]
-                        self.addToPrintList(count, participant, metric, value, total_metrics)
+                for idx, row in tags.iterrows():
+                    metric = row['Tag']
+                    value = row['Value']
+                    self.addToPrintList(count, participant, metric, value, total_metrics)
+                    count += 1
             else:
                 total_metrics = len(functions) + 1  # + 1 for NUM + 1 for INS
                 images = volume_data
                 count = 0
 
-        participant_scan_number = int(np.ceil(images.shape[0]/sample_size))
+        participant_scan_number = int(np.ceil(images.shape[0] / sample_size))
         self["participant_scan_number"] = participant_scan_number 
         self["os_handle"] = images      
         outputs_list = []
         for j in range(0, images.shape[0], sample_size):
-            I = images[j,:,:]
+            I = images[j, :, :]
             folder = Path(fname_outdir)
             self.save_image(participant, I, j, folder)
             if scan_type == "CT": 
@@ -385,38 +384,37 @@ class IQM(dict):
             outputs_list.append(outputs)
         print(f'The number of {participant_scan_number} scans were saved to {fname_outdir / participant} directory.')
         if save_masks_flag != False: 
-            print(f'The number of {participant_scan_number} maskes were also saved to {maskfolder / participant} directory.')
+            print(f'The number of {participant_scan_number} masks were also saved to {maskfolder / participant} directory.')
         
-        self.addToPrintList(1, participant,"Name of Images", os.listdir(directory_path), 25)
-        count +=1
-        self.addToPrintList(count, participant,"NUM", participant_scan_number, total_metrics)
+        self.addToPrintList(1, participant, "Name of Images", os.listdir(directory_path), 25)
+        count += 1
+        self.addToPrintList(count, participant, "NUM", participant_scan_number, total_metrics)
         averages = {}
         for key in outputs_list[0].keys():
             values = [dic[key] for dic in outputs_list]
             averages[key] = np.mean(values) 
-            count +=1
+            count += 1
             self.addToPrintList(count, participant, key, averages[key], total_metrics)
-    
+
     def save_image(self, participant, I, index, folder):
         filename = f"{participant}({index}).png"
         participant_dir = folder / participant
         image_path = participant_dir / filename
         plt.imsave(image_path, I, cmap=cm.Greys_r)
-    
-    def foreground(self,img):
+
+    def foreground(self, img):
         try:
-            h = ex.equalize_hist(img[:,:])*255
+            h = ex.equalize_hist(img[:, :]) * 255
             oi = np.zeros_like(img, dtype=np.uint16)
             oi[(img > threshold_otsu(img)) == True] = 1
             oh = np.zeros_like(img, dtype=np.uint16)
             oh[(h > threshold_otsu(h)) == True] = 1
             nm = img.shape[0] * img.shape[1]
-            w1 = np.sum(oi)/(nm)
-            w2 = np.sum(oh)/(nm)
+            w1 = np.sum(oi) / nm
+            w2 = np.sum(oh) / nm
             ots = np.zeros_like(img, dtype=np.uint16)
-            new =( w1 * img) + (w2 * h)
+            new = (w1 * img) + (w2 * h)
             ots[(new > threshold_otsu(new)) == True] = 1 
-            conv_hull = convex_hull_image(ots)
             conv_hull = convex_hull_image(ots)
             ch = np.multiply(conv_hull, 1)
             fore_image = ch * img
@@ -427,17 +425,19 @@ class IQM(dict):
             conv_hull = np.zeros_like(img, dtype=np.uint16)
             ch = np.multiply(conv_hull, 1)
 
-        return fore_image, back_image, conv_hull, img[conv_hull], img[conv_hull==False]
-    
-    
+        return fore_image, back_image, conv_hull, img[conv_hull], img[conv_hull == False]
+
     def addToPrintList(self, count, participant, metric, value, total_metrics):
         self[metric] = value
         self["output"].append(metric)
-        if metric != 'Name of Images' and  metric != 'Participant':
+        if metric != 'Name of Images' and metric != 'Participant':
             print(f'{count}/{total_metrics}) The {metric} of the participant {participant} is {value}.')
-            
+
     def get_participant_scan_number(self): 
         return self["participant_scan_number"]
+
+
+    
 
 def worker_callback(s, fname_outdir):
     global csv_report, first, nfiledone
@@ -448,15 +448,12 @@ def worker_callback(s, fname_outdir):
     if first and overwrite_flag == "w":
         first = False
         csv_report.write("\n".join(["#" + s for s in headers]) + "\n")
-        # csv_report.write("#dataset:" + "\t".join(s["output"]) + "\n")
         csv_report.write("#dataset:" + "\n")
         csv_report.write("\t".join(s["output"]) + "\n")
 
     csv_report.write("\t".join([str(s[field]) for field in s["output"]]) + "\n")
     csv_report.flush()
     nfiledone += 1
-
-
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     lines = msg.split('\n')
@@ -470,8 +467,6 @@ def print_msg_box(msg, indent=1, width=None, title=None):
     box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
     box += f'╚{"═" * (width + indent * 2)}╝' 
     print(box)   
-    
-
 
 ###############################################################################################
 
@@ -479,18 +474,17 @@ nfiledone = 0
 csv_report = None
 first = True
 headers = []
- 
 
 if __name__ == '__main__':
     start_time = time.time() 
     headers.append(f"start_time:\t{datetime.datetime.now()}")
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('output_folder_name',
-                        help = "the subfolder name on the '...\\UserInterface\\Data\\output_folder_name' directory.",
+                        help="the subfolder name on the '...\\UserInterface\\Data\\output_folder_name' directory.",
                         type=str)
     parser.add_argument('inputdir',
-                        help = "input foldername consists of *.dcm, *.mha, *.nii or *.mat files. For example: 'E:\\Data\\Rectal\\input_data_folder'",
-                        nargs = "*")
+                        help="input foldername consists of *.dcm, *.mha, *.nii or *.mat files. For example: 'E:\\Data\\Rectal\\input_data_folder'",
+                        nargs="*")
     parser.add_argument('-s', help="save foreground masks", type=lambda x: False if x == '0' else x, default=False)
     parser.add_argument('-b', help="number of samples", type=int, default=1)
     parser.add_argument('-u', help="percent of middle images", type=int, default=100)
@@ -505,9 +499,8 @@ if __name__ == '__main__':
     
     overwrite_flag = "w" 
     print_forlder_note = Path.cwd() / 'UserInterface'
-    output_folder_name =  args.output_folder_name
+    output_folder_name = args.output_folder_name
     fname_outdir = print_forlder_note / 'Data' / output_folder_name
-    # fname_outdir.mkdir(parents=True, exist_ok=True)
     headers.append(f"outdir:\t{Path(fname_outdir).resolve()}")
     headers.append(f"scantype:\t{scan_type}")
     df = input_data(root)
@@ -515,21 +508,24 @@ if __name__ == '__main__':
     
     functions = [func for name, func in inspect.getmembers(sys.modules[__name__]) if name.startswith('func')]
     functions = sorted(functions, key=lambda f: int(re.search(r'\d+', f.__name__).group()))
+
     
     if 'dicom' in df['subject_type'].values:
         tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
         with open(tag_filename, 'rb') as file:
             tag_data = yaml.safe_load(file)
         total_tags = sum(len(value) if isinstance(value, list) else 1 for value in tag_data.values())
-        print(f'For each participant with dicom files, {total_tags} tags will be extracted and {len(functions)+2} metrics will be computed.')
+        print(f'For each participant with dicom files, {total_tags} tags will be extracted and {len(functions) + 2} metrics will be computed.')
     else:
-        total_tags = 0
-        tag_data = []
-        print(f'For each participant with nondicom files {len(functions)+1} metrics will be computed.')
-
+        tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
+        with open(tag_filename, 'rb') as file:
+            tag_data = yaml.safe_load(file)
+        sample_image = sitk.ReadImage(df['path'][0]) if df['subject_type'][0] != 'dicom' else None
+        sample_tags = extract_tags(sample_image, tag_data, file_type=df['subject_type'][0], image_shape=sitk.GetArrayFromImage(sample_image).shape)
+        total_tags = len(sample_tags)
+        print(f'For each participant with nondicom files, {total_tags} tags will be extracted and {len(functions) + 1} metrics will be computed.')
 
     time.sleep(3)
-
 
     total_scans = 0
     for i in range(total_participants):
@@ -537,12 +533,10 @@ if __name__ == '__main__':
         name = df['subject_id'][i]
         scans = df['path'][i]
         subject_type = df['subject_type'][i]
-        v = volume(name, scans, subject_type, tag_data)        
-        s = IQM(v, name, total_participants,  participant_index, subject_type, total_tags)
+        v = volume(name, scans, subject_type, tag_data)
+        s = IQM(v, name, total_participants, participant_index, subject_type, total_tags)
         total_scans += s.get_participant_scan_number()
-        print(nfiledone)
-        worker_callback(s,fname_outdir)
-    
+        worker_callback(s, fname_outdir)
 
     address = Path(fname_outdir) / "results.tsv"
     cf = pd.read_csv(address, sep='\t', skiprows=4, header=0)
@@ -551,10 +545,9 @@ if __name__ == '__main__':
     cf.to_csv(Path(fname_outdir) / 'IQM.csv', index=False)
     print(f"The IQMs data are saved in the {Path(fname_outdir) / 'IQM.csv'} file.")
     
-    
     print("Done!")
     print("MRQy backend took", format((time.time() - start_time) / 60, '.2f'),
-          "minutes for {} subjects and the overal {} {} scans to run.".format(len(name), total_scans, scan_type))
+          "minutes for {} subjects and the overall {} {} scans to run.".format(total_participants, total_scans, scan_type))
     
     print_folder_path = Path(print_forlder_note)
     results_file_path = Path(fname_outdir) / "results.tsv"
@@ -563,7 +556,3 @@ if __name__ == '__main__':
            f"Click on 'View Results' and select '{results_file_path}' file.\n")
           
     print_msg_box(msg, indent=3, width=None, title="To view the final MRQy interface results:")
-    
-    
-    
-    
