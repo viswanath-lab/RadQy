@@ -215,6 +215,44 @@ def clean_value(number):
     return number
 
 
+# def extract_tags(image, tag_data, file_type='dicom', image_shape=None):
+#     non_tag_value = 'NA'
+#     pre_tags = pd.DataFrame.from_dict(tag_data, orient='index', columns=['Tag Abbreviation']).reset_index()
+#     pre_tags = pre_tags.rename(columns={'index': 'Tag Name'})
+#     pre_tags['Tag Abbreviation'] = pre_tags['Tag Abbreviation'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
+#     tags = pd.DataFrame(columns=['Tag', 'Value'])
+
+#     available_tags = {}
+#     if file_type == 'dicom':
+#         available_tags = {tag: image.get(tag, non_tag_value) for tag in image.dir()}
+#     elif file_type == 'mha':
+#         available_tags = {tag: image.GetMetaData(tag) for tag in image.GetMetaDataKeys()}
+#     else:
+#         pass
+
+#     for i, row in pre_tags.iterrows():
+#         pre_tag = row['Tag Name']
+#         pre_tag = pre_tag.replace(" ", "")
+#         tag_value = available_tags.get(pre_tag, non_tag_value)
+
+#         if pre_tag == "Rows" and tag_value == non_tag_value and image_shape is not None:
+#             tag_value = image_shape[1]
+#         if pre_tag == "Columns" and tag_value == non_tag_value and image_shape is not None:
+#             tag_value = image_shape[2]
+
+#         if tag_value != non_tag_value:
+#             tag_value = clean_value(tag_value)
+#             tag = row['Tag Abbreviation']
+#             mul_tags = tag.split(',')
+#             for j, k in enumerate(mul_tags):
+#                 if np.iterable(tag_value):
+#                     tag_value_j = tag_value[j] if j < len(tag_value) else non_tag_value
+#                 else:
+#                     tag_value_j = tag_value
+#                 new_row = {'Tag': k, 'Value': tag_value_j}
+#                 tags = pd.concat([tags, pd.DataFrame([new_row])], ignore_index=True)            
+#     return tags
+
 def extract_tags(image, tag_data, file_type='dicom', image_shape=None):
     non_tag_value = 'NA'
     pre_tags = pd.DataFrame.from_dict(tag_data, orient='index', columns=['Tag Abbreviation']).reset_index()
@@ -225,20 +263,26 @@ def extract_tags(image, tag_data, file_type='dicom', image_shape=None):
     available_tags = {}
     if file_type == 'dicom':
         available_tags = {tag: image.get(tag, non_tag_value) for tag in image.dir()}
-    elif file_type == 'mha':
+    elif file_type == 'mha' or file_type == 'nifti':
         available_tags = {tag: image.GetMetaData(tag) for tag in image.GetMetaDataKeys()}
-    else:
-        pass
+    elif file_type == 'mat':
+        available_tags = {}  # Add MAT specific metadata extraction here if needed
 
     for i, row in pre_tags.iterrows():
         pre_tag = row['Tag Name']
         pre_tag = pre_tag.replace(" ", "")
         tag_value = available_tags.get(pre_tag, non_tag_value)
 
-        if pre_tag == "Rows" and tag_value == non_tag_value and image_shape is not None:
-            tag_value = image_shape[1]
-        if pre_tag == "Columns" and tag_value == non_tag_value and image_shape is not None:
-            tag_value = image_shape[2]
+        # Handle specific tags for non-DICOM images
+        if file_type in ['mha', 'nifti']:
+            if pre_tag == "Rows":
+                tag_value = image.GetSize()[1] if tag_value == non_tag_value else tag_value
+            if pre_tag == "Columns":
+                tag_value = image.GetSize()[0] if tag_value == non_tag_value else tag_value
+            if pre_tag == "PixelSpacing":
+                tag_value = list(image.GetSpacing()) if tag_value == non_tag_value else tag_value
+            if pre_tag == "SliceThickness":
+                tag_value = image.GetSpacing()[2] if tag_value == non_tag_value else tag_value
 
         if tag_value != non_tag_value:
             tag_value = clean_value(tag_value)
@@ -250,7 +294,8 @@ def extract_tags(image, tag_data, file_type='dicom', image_shape=None):
                 else:
                     tag_value_j = tag_value
                 new_row = {'Tag': k, 'Value': tag_value_j}
-                tags = pd.concat([tags, pd.DataFrame([new_row])], ignore_index=True)            
+                tags = pd.concat([tags, pd.DataFrame([new_row])], ignore_index=True)
+                
     return tags
 
 
@@ -303,7 +348,7 @@ def volume(name, scans, subject_type, tag_data, middle_size=100):
     if subject_type == 'dicom':
         scans = scans[int(0.005 * len(scans) * (100 - middle_size)):int(0.005 * len(scans) * (100 + middle_size))]
         inf = pydicom.dcmread(scans[0])
-        tags = extract_tags(inf, tag_data)
+        tags = extract_tags(inf, tag_data, file_type='dicom')
         first_row = {'Tag': 'Participant ID', 'Value': f"{name}"}
         tags.loc[-1] = first_row
         tags.index = tags.index + 1
@@ -333,6 +378,7 @@ def volume(name, scans, subject_type, tag_data, middle_size=100):
         images = np.transpose(images, (2, 0, 1))
         volumes.append((images, tags))
     return volumes
+
 
 class IQM(dict):
 
@@ -387,7 +433,7 @@ class IQM(dict):
             print(f'The number of {participant_scan_number} masks were also saved to {maskfolder / participant} directory.')
         
         self.addToPrintList(1, participant, "Name of Images", os.listdir(directory_path), 25)
-        count += 1
+        # count += 1
         self.addToPrintList(count, participant, "NUM", participant_scan_number, total_metrics)
         averages = {}
         for key in outputs_list[0].keys():
@@ -431,7 +477,7 @@ class IQM(dict):
         self[metric] = value
         self["output"].append(metric)
         if metric != 'Name of Images' and metric != 'Participant':
-            print(f'{count}/{total_metrics}) The {metric} of the participant {participant} is {value}.')
+            print(f'{count}/{total_metrics-1}) The {metric} of the participant {participant} is {value}.')
 
     def get_participant_scan_number(self): 
         return self["participant_scan_number"]
@@ -525,6 +571,7 @@ if __name__ == '__main__':
         total_tags = len(sample_tags)
         print(f'For each participant with nondicom files, {total_tags} tags will be extracted and {len(functions) + 1} metrics will be computed.')
 
+
     time.sleep(3)
 
     total_scans = 0
@@ -546,7 +593,7 @@ if __name__ == '__main__':
     print(f"The IQMs data are saved in the {Path(fname_outdir) / 'IQM.csv'} file.")
     
     print("Done!")
-    print("RadQy backend took", format((time.time() - start_time) / 60, '.2f'),
+    print("MRQy backend took", format((time.time() - start_time) / 60, '.2f'),
           "minutes for {} subjects and the overall {} {} scans to run.".format(total_participants, total_scans, scan_type))
     
     print_folder_path = Path(print_forlder_note)
@@ -555,4 +602,4 @@ if __name__ == '__main__':
     msg = (f"Please go to the '{print_folder_path}' directory and open up the 'index.html' file.\n"
            f"Click on 'View Results' and select '{results_file_path}' file.\n")
           
-    print_msg_box(msg, indent=3, width=None, title="To view the final RadQy interface results:")
+    print_msg_box(msg, indent=3, width=None, title="To view the final MRQy interface results:")
