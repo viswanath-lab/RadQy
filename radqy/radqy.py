@@ -546,7 +546,7 @@ if __name__ == '__main__':
     print(f"The IQMs data are saved in the {Path(fname_outdir) / 'IQM.csv'} file.")
     
     print("Done!")
-    print("MRQy backend took", format((time.time() - start_time) / 60, '.2f'),
+    print("RadQy backend took", format((time.time() - start_time) / 60, '.2f'),
           "minutes for {} subjects and the overall {} {} scans to run.".format(total_participants, total_scans, scan_type))
     
     print_folder_path = Path(print_forlder_note)
@@ -555,4 +555,4 @@ if __name__ == '__main__':
     msg = (f"Please go to the '{print_folder_path}' directory and open up the 'index.html' file.\n"
            f"Click on 'View Results' and select '{results_file_path}' file.\n")
           
-    print_msg_box(msg, indent=3, width=None, title="To view the final MRQy interface results:")
+    print_msg_box(msg, indent=3, width=None, title="To view the final RadQy interface results:")
