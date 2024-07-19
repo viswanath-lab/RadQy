@@ -13,3 +13,33 @@ To install the package, use pip:
 
     pip install radqy
 
+
+Usage
+-----
+
+To use RadQy from the command line, run the following command:
+
+.. code-block:: bash
+
+    radqy -h
+
+
+
+Documentation
+-------------
+
+
+License
+-------
+
+
+Contributing
+------------
+
+
+Citation
+--------
+
+
+
+
