@@ -53,3 +53,6 @@ target-version = ["py38"]
 profile = "black"
 known_first_party = "radqy"
 skip_glob = ["**/__init__.py"]
+
+[project.scripts]
+radqy = "radqy.cli:run_cli"
