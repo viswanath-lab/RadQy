@@ -27,6 +27,38 @@ from scipy.io import loadmat
 import warnings
 warnings.filterwarnings("ignore")
 
+import importlib.resources
+from pathlib import Path
+
+
+def path_resolver(pkg, path):
+    """
+    Resolve the path to a resource in a package or a local script.
+    
+    Parameters
+    ----------
+    pkg : str
+        Name of the package.
+    path : str
+        Path to the resource.
+
+    Returns
+    -------
+    Path 
+        Path to the resource.
+    """
+    try:
+        return Path(importlib.resources.files(pkg)) / path
+    except TypeError:
+        return Path(path)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Resource {path} not found in package {pkg} or locally."
+        )
+    except Exception as e:
+        raise e
+    
+
 def func1(F, B, c, f, b):
     name = 'MEAN'
     measure = np.nanmean(f)
@@ -381,8 +413,9 @@ def volume(name, scans, subject_type, tag_data, middle_size=100):
 
 
 class IQM(dict):
+    def __init__(self, v, participant, total_participants, participant_index, subject_type, total_tags, fname_outdir, save_masks_flag,functions, sample_size, scan_type):
 
-    def __init__(self, v, participant, total_participants, participant_index, subject_type, total_tags):
+    # def __init__(self, v, participant, total_participants, participant_index, subject_type, total_tags):
         print(f'-------------- Participant {participant_index} out of {total_participants} with the {subject_type} type: {participant} --------------')
         dict.__init__(self)
         self["warnings"] = [] 
@@ -485,7 +518,7 @@ class IQM(dict):
 
     
 
-def worker_callback(s, fname_outdir):
+def worker_callback(s, fname_outdir, overwrite_flag, headers):
     global csv_report, first, nfiledone
     if nfiledone == 0:
         csv_report = open(Path(fname_outdir) / "results.tsv", overwrite_flag, buffering=1)
@@ -521,21 +554,22 @@ csv_report = None
 first = True
 headers = []
 
-if __name__ == '__main__':
+def main(args):
     start_time = time.time() 
     headers.append(f"start_time:\t{datetime.datetime.now()}")
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('output_folder_name',
-                        help="the subfolder name on the '...\\UserInterface\\Data\\output_folder_name' directory.",
-                        type=str)
-    parser.add_argument('inputdir',
-                        help="input foldername consists of *.dcm, *.mha, *.nii or *.mat files. For example: 'E:\\Data\\Rectal\\input_data_folder'",
-                        nargs="*")
-    parser.add_argument('-s', help="save foreground masks", type=lambda x: False if x == '0' else x, default=False)
-    parser.add_argument('-b', help="number of samples", type=int, default=1)
-    parser.add_argument('-u', help="percent of middle images", type=int, default=100)
-    parser.add_argument('-t', help="type of scan (MRI or CT)", default='MRI', choices=['MRI', 'CT'])
-    args = parser.parse_args() 
+    # parser = argparse.ArgumentParser(description='')
+    # parser.add_argument('output_folder_name',
+    #                     help="the subfolder name on the '...\\UserInterface\\Data\\output_folder_name' directory.",
+    #                     type=str)
+    # parser.add_argument('inputdir',
+    #                     help="input foldername consists of *.dcm, *.mha, *.nii or *.mat files. For example: 'E:\\Data\\Rectal\\input_data_folder'",
+    #                     nargs="*")
+    # parser.add_argument('-s', help="save foreground masks", type=lambda x: False if x == '0' else x, default=False)
+    # parser.add_argument('-b', help="number of samples", type=int, default=1)
+    # parser.add_argument('-u', help="percent of middle images", type=int, default=100)
+    # parser.add_argument('-t', help="type of scan (MRI or CT)", default='MRI', choices=['MRI', 'CT'])
+    # args = parser.parse_args() 
+
     root = args.inputdir[0]
     save_masks_flag = args.s
     sample_size = args.b
@@ -555,17 +589,15 @@ if __name__ == '__main__':
     functions = [func for name, func in inspect.getmembers(sys.modules[__name__]) if name.startswith('func')]
     functions = sorted(functions, key=lambda f: int(re.search(r'\d+', f.__name__).group()))
 
+    tag_filename = path_resolver("radqy" , "MRI_TAGS.yaml") if scan_type == "MRI" else path_resolver("radqy" , "CT_TAGS.yaml")
+
+    with open(tag_filename, 'rb') as file:
+        tag_data = yaml.safe_load(file)
     
     if 'dicom' in df['subject_type'].values:
-        tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
-        with open(tag_filename, 'rb') as file:
-            tag_data = yaml.safe_load(file)
         total_tags = sum(len(value) if isinstance(value, list) else 1 for value in tag_data.values())
         print(f'For each participant with dicom files, {total_tags} tags will be extracted and {len(functions) + 2} metrics will be computed.')
     else:
-        tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
-        with open(tag_filename, 'rb') as file:
-            tag_data = yaml.safe_load(file)
         sample_image = sitk.ReadImage(df['path'][0]) if df['subject_type'][0] != 'dicom' else None
         sample_tags = extract_tags(sample_image, tag_data, file_type=df['subject_type'][0], image_shape=sitk.GetArrayFromImage(sample_image).shape)
         total_tags = len(sample_tags)
@@ -581,9 +613,9 @@ if __name__ == '__main__':
         scans = df['path'][i]
         subject_type = df['subject_type'][i]
         v = volume(name, scans, subject_type, tag_data)
-        s = IQM(v, name, total_participants, participant_index, subject_type, total_tags)
+        s = IQM(v, name, total_participants, participant_index, subject_type, total_tags, fname_outdir, save_masks_flag,functions, sample_size, scan_type)
         total_scans += s.get_participant_scan_number()
-        worker_callback(s, fname_outdir)
+        worker_callback(s, fname_outdir, overwrite_flag, headers)
 
     address = Path(fname_outdir) / "results.tsv"
     cf = pd.read_csv(address, sep='\t', skiprows=4, header=0)

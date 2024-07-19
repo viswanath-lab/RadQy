@@ -1,0 +1,11 @@
+global-exclude *_local.py
+
+recursive-exclude api *
+recursive-exclude *_local *
+recursive-exclude scripts *
+recursive-exclude * tests
+
+include VERSION
+
+recursive-include radqy *.py
+recursive-include radqy *.yaml

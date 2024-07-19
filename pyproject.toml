@@ -32,14 +32,10 @@ dependencies = [
   "scipy >= 1.8.0",  
   "scikit-learn >= 1.0.2",  
   "scikit-image >= 0.19.2",  
-  "umap-learn >= 0.5.3", 
+  "umap-learn >= 0.5.3",
+  "pyyaml >= 6.0.1",
+  "requests >= 2.32.3",
 ]
-
-[tool.setuptools]
-packages = ["radqy"]
-
-[tool.setuptools.dynamic]
-version = {file = ["VERSION"]}
 
 [tool.black]
 line-length = 88
@@ -51,3 +47,15 @@ target-version = ["py38"]
 profile = "black"
 known_first_party = "radqy"
 skip_glob = ["**/__init__.py"]
+
+[project.scripts]
+radqy = "radqy.cli:run_cli"
+
+[tool.setuptools]
+packages = ["radqy"]
+
+[tool.setuptools.dynamic]
+version = {file = ["VERSION"]}
+
+[tool.setuptools.package-data]
+radqy = ["*.yaml"]
