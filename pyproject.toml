@@ -37,12 +37,6 @@ dependencies = [
   "requests >= 2.32.3",
 ]
 
-[tool.setuptools]
-packages = ["radqy"]
-
-[tool.setuptools.dynamic]
-version = {file = ["VERSION"]}
-
 [tool.black]
 line-length = 88
 target-version = ["py38"]
@@ -56,3 +50,12 @@ skip_glob = ["**/__init__.py"]
 
 [project.scripts]
 radqy = "radqy.cli:run_cli"
+
+[tool.setuptools]
+packages = ["radqy"]
+
+[tool.setuptools.dynamic]
+version = {file = ["VERSION"]}
+
+[tool.setuptools.package-data]
+radqy = ["*.yaml"]
