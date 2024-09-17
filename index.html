@@ -1,38 +1,33 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <meta name="description"
-        content="Deformable Neural Radiance Fields creates free-viewpoint portraits (nerfies) from casually captured videos.">
-  <meta name="keywords" content="Nerfies, D-NeRF, NeRF">
+    content="RadQy is a quality assurance and checking tool for quantitative assessment of magnetic resonance imaging (MRI) and computed tomography (CT) data.">
+  <meta name="keywords" content="Magnetic Resonance Imaging (MRI), Computed Tomography (CT), RadQy">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nerfies: Deformable Neural Radiance Fields</title>
+  <title>RadQy</title>
 
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
 
-    function gtag() {
-      dataLayer.push(arguments);
-    }
 
-    gtag('js', new Date());
-
-    gtag('config', 'G-PYVRSFMDRL');
-  </script>
-
-  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
-        rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
 
   <link rel="stylesheet" href="./static/css/bulma.min.css">
   <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
   <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
   <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
   <link rel="stylesheet" href="./static/css/index.css">
-  <link rel="icon" href="./static/images/favicon.ico">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="./static/fav/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="./static/fav/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./static/fav/favicon-16x16.png">
+  <link rel="manifest" href="./static/fav/site.webmanifest">
+
+
+
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script defer src="./static/js/fontawesome.all.min.js"></script>
@@ -40,18 +35,19 @@
   <script src="./static/js/bulma-slider.min.js"></script>
   <script src="./static/js/index.js"></script>
 </head>
+
 <body>
 
 
 
 
-<section class="hero">
-  <div class="hero-body">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered">
-        <div class="column has-text-centered">
-          <h1 class="title is-1 publication-title"> CWRU Workshop on LLMs</h1>
-          <!-- <div class="is-size-5 publication-authors"> -->
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title"> RadQy </h1>
+            <!-- <div class="is-size-5 publication-authors"> -->
             <!-- <span class="author-block">
               <a href="https://keunhong.com">Keunhong Park</a><sup>1</sup>,</span>
             <span class="author-block">
@@ -71,92 +67,119 @@
             <span class="author-block">
               <a href="http://www.ricardomartinbrualla.com">Ricardo Martin-Brualla</a><sup>2</sup>
             </span> -->
-          <!-- </div> -->
-<!-- 
+            <!-- </div> -->
+            <!-- 
           <div class="is-size-5 publication-authors">
             <span class="author-block"><sup>1</sup>University of Washington,</span>
             <span class="author-block"><sup>2</sup>Google Research</span>
           </div> -->
 
-          <div class="column has-text-centered">
-            <div class="publication-links">
-              <!-- PDF Link. -->
-              <span class="link-block">
-                <a href="https://arxiv.org/pdf/2011.12948"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="fas fa-file-pdf"></i>
-                  </span>
-                  <span>Paper</span>
-                </a>
-              </span>
-         
-       
-    
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <!-- PDF Link. -->
+                <span class="link-block">
+
+                  <a href="https://pypi.org/project/radqy/" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <!-- <i class="fas fa-file-pdf"></i> -->
+
+                      <i class="fas fa-download"></i>
+
+                    </span>
+                    <span>Use RadQy</span>
+                  </a>
+
+                  <a href="https://github.com/ccipd/MRQy/tree/radqy" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+
+
+
+                    <span class="icon">
+                      <!-- <i class="fas fa-file-pdf"></i> -->
+
+                      <i class="fab fa-github"></i>
+                      <!-- <i class="fas fa-download"></i>  -->
+
+
+                    </span>
+                    <span>GitHub</span>
+
+                  </a>
+
+
+
+                </span>
+
+
+
+
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+
+
+
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <!-- Abstract. -->
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">About</h2>
+          <div class="content has-text-justified">
+            <p>
+              <b>RadQy</b> is a quality assurance and checking tool for quantitative assessment of magnetic resonance
+              imaging (MRI) and computed tomography (CT) data
+            </p>
 
           </div>
-          
         </div>
       </div>
+      <!--/ Abstract. -->
+
+      <!-- Paper video. -->
+
+      <!--/ Paper video. -->
     </div>
-  </div>
-</section>
+  </section>
 
 
 
 
-<section class="section">
-  <div class="container is-max-desktop">
-    <!-- Abstract. -->
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">About</h2>
-        <div class="content has-text-justified">
-          <p>
-           LOREM IPSUM
-          </p>
-         
-        </div>
-      </div>
-    </div>
-    <!--/ Abstract. -->
-
-    <!-- Paper video. -->
-
-    <!--/ Paper video. -->
-  </div>
-</section>
-
-
-
-
-<footer class="footer">
-  <div class="container">
-    <div class="content has-text-centered">
-      <a class="icon-link"
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <!-- <a class="icon-link"
          href="./static/videos/nerfies_paper.pdf">
         <i class="fas fa-file-pdf"></i>
-      </a>
-      <a class="icon-link" href="https://github.com/mohsenhariri/paper-gh" class="external-link" disabled>
-        <i class="fab fa-github"></i>
-      </a>
-    </div>
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <div class="content">
-          <p>
-            This website is licensed under a <a rel="license"
-                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
-            Commons Attribution-ShareAlike 4.0 International License</a>.
-            Forked from 
-            <a href="http://creativecommons.org/licenses/by-sa/4.0/">Nerfies</a>.
+      </a> -->
+        <a class="icon-link" href="https://github.com/mohsenhariri/paper-gh" class="external-link" disabled>
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content">
+            <p>
+              This website is licensed under a <a rel="license"
+                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+                Commons Attribution-ShareAlike 4.0 International License</a>.
+              Forked from
+              <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>.
 
-          </p>
+            </p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</footer>
+  </footer>
 
 </body>
+
 </html>
