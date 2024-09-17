@@ -1,4 +1,4 @@
-# GitHub Page Template for Research Projects
+# RadQy Web Page
 
 
 
