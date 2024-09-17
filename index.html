@@ -135,19 +135,109 @@
           <div class="content has-text-justified">
             <p>
               <b>RadQy</b> is a quality assurance and checking tool for quantitative assessment of magnetic resonance
-              imaging (MRI) and computed tomography (CT) data
+              imaging (MRI) and computed tomography (CT) data.
             </p>
-
           </div>
         </div>
       </div>
       <!--/ Abstract. -->
-
-      <!-- Paper video. -->
-
-      <!--/ Paper video. -->
+  
+      <!-- README. -->
+      <div class="columns is-centered">
+        <div class="column is-four-fifths">
+          <div class="content">
+            <h1>Installation</h1>
+            <p>RadQy can be installed via <code>pip</code> or <code>conda</code>.</p>
+  
+            <h3>Using pip</h3>
+            <pre><code class="language-bash">pip install radqy</code></pre>
+  
+            <h3>Using conda</h3>
+            <pre><code class="language-bash">conda create -n radqy python=3.10
+  conda activate radqy
+  pip install radqy</code></pre>
+  
+            <h2>Running</h2>
+            <p>Display the help message:</p>
+            <pre><code class="language-bash">radqy --help</code></pre>
+  
+            <p><strong>Expected Output:</strong></p>
+            <pre><code>usage: radqy [-h] [--ui-download] [--ui-run] [-s S] [-b B] [-u U] [-t {MRI,CT}]
+               output_folder_name inputdir [inputdir ...]
+  
+  positional arguments:
+    output_folder_name    The subfolder name in the '...\UserInterface\Data\output_folder_name' directory.
+    inputdir              Input folder(s) containing *.dcm, *.mha, *.nii, or *.mat files.
+                          Example: 'E:\Data\Rectal\input_data_folder'
+  
+  optional arguments:
+    -h, --help            Show this help message and exit
+    --ui-download         Download the UserInterface.zip file
+    --ui-run              Run the User Interface
+    -s S                  Save foreground masks (default: False)
+    -b B                  Number of samples (default: 1)
+    -u U                  Percent of middle images to process (default: 100)
+    -t {MRI,CT}           Type of scan (MRI or CT) (default: MRI)</code></pre>
+  
+            <h3>Running the Quality Control Script</h3>
+            <p>Run the <strong>radqy</strong> command using the following syntax:</p>
+            <pre><code class="language-bash">radqy output_folder_name "input_directory" [options]</code></pre>
+  
+            <p><strong>Example:</strong></p>
+            <pre><code class="language-bash">radqy output_results "E:\Data\Rectal\input_data_folder" -s True -b 5 -u 50 -t CT</code></pre>
+  
+            <h4>Arguments:</h4>
+            <ul>
+              <li><strong>output_folder_name (required)</strong>: The subfolder name in the <code>...\UserInterface\Data\output_folder_name</code> directory.</li>
+              <li><strong>input_directory (required)</strong>: Path to the input directory containing image files.</li>
+            </ul>
+  
+            <h4>Options:</h4>
+            <ul>
+              <li><strong>-s</strong>: Save foreground masks (<code>True</code> or <code>False</code>). Default is <code>False</code>.</li>
+              <li><strong>-b</strong>: Number of samples. Default is <code>1</code>.</li>
+              <li><strong>-u</strong>: Percent of middle images to process. Default is <code>100</code>.</li>
+              <li><strong>-t</strong> (required): Type of scan (<code>MRI</code> or <code>CT</code>). Default is <code>MRI</code>.</li>
+            </ul>
+  
+            <h4>Notes:</h4>
+            <ul>
+              <li>There is no need to manually create a subfolder in the Data directory; specifying its name in the command is sufficient.</li>
+              <li>All actions will be printed in the output console for transparency.</li>
+              <li>Thumbnail images in .png format will be saved in <code>...\UserInterface\Data\output_folder_name</code>, with each original filename as a subfolder name.</li>
+            </ul>
+  
+            <h3>Running the User Interface</h3>
+            <h4>Download the User Interface</h4>
+            <p>To download the User Interface, run the following command:</p>
+            <pre><code class="language-bash">radqy --ui-download</code></pre>
+            <p>This command will download and unzip the User Interface into the appropriate directory.</p>
+  
+            <h4>Run the User Interface</h4>
+            <p>To run the User Interface, execute:</p>
+            <pre><code class="language-bash">radqy --ui-run</code></pre>
+            <p>If the User Interface is not already downloaded, this command will download it automatically before launching.</p>
+  
+            <h4>Accessing the Front-End Interface Manually</h4>
+            <p>If you prefer to access the User Interface without using the <code>--ui-run</code> command:</p>
+            <ol>
+              <li>
+                <strong>Open the Interface:</strong>
+                <p>Navigate to the UserInterface directory (e.g., <code>C:\Users\YourUserName\.radqy\UserInterface</code>).</p>
+                <p>Double-click on <code>index.html</code> to open the front-end user interface.</p>
+              </li>
+              <li>
+                <strong>Load Results:</strong>
+                <p>In the interface, select the appropriate <code>results.tsv</code> file from the <code>...\UserInterface\Data\output_folder_name</code> directory.</p>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <!--/ README. -->
     </div>
   </section>
+  
 
 
 
