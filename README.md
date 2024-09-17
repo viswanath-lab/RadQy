@@ -57,7 +57,7 @@ radqy --help
 ```
 Expected Output:
 
-```bash
+```
 usage: radqy [-h] [--ui-download] [--ui-run] [-s S] [-b B] [-u U] [-t {MRI,CT}]
              output_folder_name inputdir [inputdir ...]
 
