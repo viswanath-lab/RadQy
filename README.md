@@ -73,7 +73,7 @@ optional arguments:
   -s S                  Save foreground masks (default: False)
   -b B                  Number of samples (default: 1)
   -u U                  Percent of middle images to process (default: 100)
-  -t {MRI,CT}           Type of scan (MRI or CT) (default: MRI)
+  -t {MRI,CT}           Type of scan (MRI or CT) 
 ```
 
 
@@ -102,7 +102,7 @@ Options:
 - **-s**: Save foreground masks (`True` or `False`). Default is `False`.
 - **-b**: Number of samples. Default is `1`.
 - **-u**: Percent of middle images to process. Default is `100`.
-- **-t** (required): Type of scan (`MRI` or `CT`). Default is `MRI`.
+- **-t** (required): Type of scan (`MRI` or `CT`). 
 
 Notes:
 
