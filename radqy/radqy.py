@@ -22,7 +22,7 @@ from scipy.signal import convolve2d as conv2
 from skimage.filters import median
 from skimage.morphology import square
 from pathlib import Path
-from scipy.io import loadmat
+# from scipy.io import loadmat
 import warnings
 warnings.filterwarnings("ignore")
 
