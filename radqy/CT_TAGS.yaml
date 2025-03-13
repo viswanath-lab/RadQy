@@ -1,0 +1,17 @@
+# Please add your specific tags to this yaml file. 
+
+
+Manufacturer: MFR
+Pixel Spacing: 
+  - VRX
+  - VRY
+Slice Thickness: VRZ
+Rows: ROW
+Columns: COL
+X-Ray Tube Current: TUC
+Kilovoltage Peak: KVP
+Convolution Kernel: CKL
+Slice Location: SLL
+
+
+

@@ -1,0 +1,14 @@
+# Please add your specific tags to this yaml file. 
+
+
+Manufacturer: MFR
+Pixel Spacing: 
+  - VRX
+  - VRY
+Slice Thickness: VRZ
+Rows: ROW
+Columns: COL
+Repetition Time: TR
+Echo Time: TE
+
+
