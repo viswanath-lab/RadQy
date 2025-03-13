@@ -1,8 +1,0 @@
-services:
-  db-mongo:
-    container_name: mrqy-1
-    image: user/mrqy:1.0.0
-    volumes:
-      - ./dataset:/app/dataset
-      - ./result:/app/UserInterface/Data
-    command: python /app/src/mrqy/QC.py output10 /app/dataset
