@@ -544,17 +544,20 @@ if __name__ == '__main__':
                         type=str)
     parser.add_argument('inputdir',
                         help="input foldername consists of *.dcm, *.mha, *.nii or *.mat files. For example: 'E:\\Data\\Rectal\\input_data_folder'",
-                        nargs="*")
+                        type=str)
+    parser.add_argument('modality',
+        help="Image modality type can either be 'MRI' or 'CT'.",
+        type=str,
+        choices=['MRI', 'CT'])
     parser.add_argument('-s', help="save foreground masks", type=lambda x: False if x == '0' else x, default=False)
     parser.add_argument('-b', help="number of samples", type=int, default=1)
     parser.add_argument('-u', help="percent of middle images", type=int, default=100)
-    parser.add_argument('-t', help="type of scan (MRI or CT)", default='MRI', choices=['MRI', 'CT'])
     args = parser.parse_args() 
-    root = args.inputdir[0]
+    root = args.inputdir
     save_masks_flag = args.s
     sample_size = args.b
     middle_size = args.u
-    scan_type = args.t
+    scan_type = args.modality
     print(f'RadQy for the {scan_type} data is starting....')
     
     overwrite_flag = "w" 
