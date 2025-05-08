@@ -1,45 +1,47 @@
-==============
 RadQy
-==============
+=====
 
-RadQy is a quality assurance and checking tool for quantitative assessment of magnetic resonance imaging (MRI) and computed tomography (CT) data.
+RadQy is a quality assurance and evaluation tool for quantitative assessment of MRI and CT imaging data.
+
+It computes a variety of image quality metrics (IQMs) to assist with downstream image analysis, machine learning, and radiomic studies.
+
+----
+
+Features:
+- Computes over 30 image quality metrics
+- Supports T1w, T2w, and CT modalities
+- UMAP visualization of quality trends
+- CLI for batch processing
+
+----
 
 Installation
 ------------
 
-To install the package, use pip:
+From GitHub (latest version):
+::
 
-.. code-block:: bash
+    pip install git+https://github.com/viswanath-lab/RadQy.git
+
+From PyPI (stable, may lag behind):
+::
 
     pip install radqy
 
+----
 
 Usage
 -----
 
-To use RadQy from the command line, run the following command:
+Run from command line:
 
-.. code-block:: bash
+::
 
-    radqy -h
+    radqy --modality T1w --input my_scan.nii.gz
 
-
-
-Documentation
--------------
-
-
-License
--------
-
-
-Contributing
-------------
-
+----
 
 Citation
 --------
 
-
-
-
+If you use this software, please cite the corresponding paper (coming soon).
