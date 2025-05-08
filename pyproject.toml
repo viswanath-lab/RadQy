@@ -6,13 +6,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radqy"
-dynamic = ["version"]
+version = "2025.3"
 authors = [{ name = "Amir Reza Sadri", email = "ars329@case.edu" }]
 description = "RadQy is a quality assurance and checking tool for quantitative assessment of magnetic resonance imaging (MRI) and computed tomography (CT) data."
 
 keywords = ["MRI", "CT"]
 license = { text = "BSD 3-Clause Clear License" }
-# https://github.com/pypi/warehouse/issues/869
 readme = "README.rst"
 requires-python = ">=3.8,<3.12"
 classifiers = [
@@ -20,7 +19,6 @@ classifiers = [
   "License :: OSI Approved :: BSD License",
   "Operating System :: OS Independent",
 ]
-
 
 dependencies = [
   'importlib-metadata; python_version<"3.8"', 
@@ -53,9 +51,6 @@ radqy = "radqy.cli:run_cli"
 
 [tool.setuptools]
 packages = ["radqy"]
-
-[tool.setuptools.dynamic]
-version = {file = ["VERSION"]}
 
 [tool.setuptools.package-data]
 radqy = ["*.yaml"]
