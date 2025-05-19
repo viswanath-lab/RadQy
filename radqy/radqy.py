@@ -528,68 +528,44 @@ def print_msg_box(msg, indent=1, width=None, title=None):
     box += f'╚{"═" * (width + indent * 2)}╝' 
     print(box)   
 
-###############################################################################################
 
-nfiledone = 0
-csv_report = None
-first = True
-headers = []
+def main(args):
+    global save_masks_flag, sample_size, middle_size, scan_type, fname_outdir, overwrite_flag, headers
 
-if __name__ == '__main__':
-    start_time = time.time() 
-    headers.append(f"start_time:\t{datetime.datetime.now()}")
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('output_folder_name',
-                        help="the subfolder name on the '...\\UserInterface\\Data\\output_folder_name' directory.",
-                        type=str)
-    parser.add_argument('inputdir',
-                        help="input foldername consists of *.dcm, *.mha, *.nii or *.mat files. For example: 'E:\\Data\\Rectal\\input_data_folder'",
-                        type=str)
-    parser.add_argument('modality',
-        help="Image modality type can either be 'MRI' or 'CT'.",
-        type=str,
-        choices=['MRI', 'CT'])
-    parser.add_argument('-s', help="save foreground masks", type=lambda x: False if x == '0' else x, default=False)
-    parser.add_argument('-b', help="number of samples", type=int, default=1)
-    parser.add_argument('-u', help="percent of middle images", type=int, default=100)
-    args = parser.parse_args() 
-    root = args.inputdir
+    root = args.inputdir[0] if isinstance(args.inputdir, list) else args.inputdir
     save_masks_flag = args.s
     sample_size = args.b
     middle_size = args.u
-    scan_type = args.modality
+    scan_type = args.t
+    overwrite_flag = "w"
+
     print(f'RadQy for the {scan_type} data is starting....')
-    
-    overwrite_flag = "w" 
+
+    headers.append(f"start_time:\t{datetime.datetime.now()}")
     print_forlder_note = Path.cwd() / 'UserInterface'
     output_folder_name = args.output_folder_name
     fname_outdir = print_forlder_note / 'Data' / output_folder_name
     headers.append(f"outdir:\t{Path(fname_outdir).resolve()}")
     headers.append(f"scantype:\t{scan_type}")
+
     df = input_data(root)
     total_participants = len(df)
-    
+
     functions = [func for name, func in inspect.getmembers(sys.modules[__name__]) if name.startswith('func')]
     functions = sorted(functions, key=lambda f: int(re.search(r'\d+', f.__name__).group()))
 
-    
     if 'dicom' in df['subject_type'].values:
         tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
         with open(tag_filename, 'rb') as file:
             tag_data = yaml.safe_load(file)
         total_tags = sum(len(value) if isinstance(value, list) else 1 for value in tag_data.values())
-        print(f'For each participant with dicom files, {total_tags} tags will be extracted and {len(functions) + 2} metrics will be computed.')
     else:
         tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
         with open(tag_filename, 'rb') as file:
             tag_data = yaml.safe_load(file)
-        sample_image = sitk.ReadImage(df['path'][0]) if df['subject_type'][0] != 'dicom' else None
+        sample_image = sitk.ReadImage(df['path'][0])
         sample_tags = extract_tags(sample_image, tag_data, file_type=df['subject_type'][0], image_shape=sitk.GetArrayFromImage(sample_image).shape)
         total_tags = len(sample_tags)
-        print(f'For each participant with nondicom files, {total_tags} tags will be extracted and {len(functions) + 1} metrics will be computed.')
-
-
-    time.sleep(3)
 
     total_scans = 0
     for i in range(total_participants):
@@ -607,16 +583,34 @@ if __name__ == '__main__':
     cf = cf.drop(['Name of Images'], axis=1)
     cf = cf.fillna('N/A')
     cf.to_csv(Path(fname_outdir) / 'IQM.csv', index=False)
+
     print(f"The IQMs data are saved in the {Path(fname_outdir) / 'IQM.csv'} file.")
-    
     print("Done!")
-    print("MRQy backend took", format((time.time() - start_time) / 60, '.2f'),
-          "minutes for {} subjects and the overall {} {} scans to run.".format(total_participants, total_scans, scan_type))
-    
+    print("RadQy backend took", format((time.time() - time.time()) / 60, '.2f'),
+          f"minutes for {total_participants} subjects and the overall {total_scans} {scan_type} scans to run.")
+
     print_folder_path = Path(print_forlder_note)
     results_file_path = Path(fname_outdir) / "results.tsv"
-    
     msg = (f"Please go to the '{print_folder_path}' directory and open up the 'index.html' file.\n"
            f"Click on 'View Results' and select '{results_file_path}' file.\n")
-          
     print_msg_box(msg, indent=3, width=None, title="To view the final MRQy interface results:")
+
+###############################################################################################
+
+nfiledone = 0
+csv_report = None
+first = True
+headers = []
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('output_folder_name', type=str)
+    parser.add_argument('inputdir', type=str)
+    parser.add_argument('modality', type=str, choices=['MRI', 'CT'])
+    parser.add_argument('-s', type=lambda x: False if x == '0' else x, default=False)
+    parser.add_argument('-b', type=int, default=1)
+    parser.add_argument('-u', type=int, default=100)
+    args = parser.parse_args()
+    main(args)
