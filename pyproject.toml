@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radqy"
-version = "2025.3"
+version = "2025.3.2"
 authors = [{ name = "Amir Reza Sadri", email = "ars329@case.edu" }]
 description = "RadQy is a quality assurance and checking tool for quantitative assessment of magnetic resonance imaging (MRI) and computed tomography (CT) data."
 
