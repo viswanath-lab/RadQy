@@ -383,7 +383,7 @@ def volume(name, scans, subject_type, tag_data, middle_size=100):
 
 class IQM(dict):
 
-    def __init__(self, v, participant, total_participants, participant_index, subject_type, total_tags):
+    def __init__(self, v, participant, total_participants, participant_index, subject_type, total_tags, metric_functions):
         print(f'-------------- Participant {participant_index} out of {total_participants} with the {subject_type} type: {participant} --------------')
         dict.__init__(self)
         self["warnings"] = [] 
@@ -397,7 +397,7 @@ class IQM(dict):
         count = 1
         for volume_data in v:
             if isinstance(volume_data, tuple) and len(volume_data) == 2:
-                total_metrics = total_tags + len(functions) + 2  # + 1 for NUM + 1 for INS
+                total_metrics = total_tags + len(metric_functions) + 2  # + 1 for NUM + 1 for INS
                 images = volume_data[0]
                 tags = volume_data[1]
                 for idx, row in tags.iterrows():
@@ -406,7 +406,7 @@ class IQM(dict):
                     self.addToPrintList(count, participant, metric, value, total_metrics)
                     count += 1
             else:
-                total_metrics = len(functions) + 1  # + 1 for NUM + 1 for INS
+                total_metrics = len(metric_functions) + 1  # + 1 for NUM + 1 for INS
                 images = volume_data
                 count = 0
 
@@ -425,7 +425,7 @@ class IQM(dict):
                 self.save_image(participant, c, j, maskfolder)
                 
             outputs = {}
-            for func in functions:
+            for func in metric_functions:
                 name, measure = func(F, B, c, f, b)
                 outputs[name] = measure
             outputs_list.append(outputs)
@@ -577,7 +577,7 @@ def main(args):
         scans = df['path'][i]
         subject_type = df['subject_type'][i]
         v = volume(name, scans, subject_type, tag_data)
-        s = IQM(v, name, total_participants, participant_index, subject_type, total_tags)
+        s = IQM(v, name, total_participants, participant_index, subject_type, total_tags, functions)
         total_scans += s.get_participant_scan_number()
         worker_callback(s, fname_outdir)
 
