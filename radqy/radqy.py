@@ -343,7 +343,7 @@ def volume(name, scans, subject_type, tag_data, middle_size=100):
         tags.index = tags.index + 1
         tags = tags.sort_index()
 
-        slices = [pydicom.read_file(s) for s in scans]
+        slices = [pydicom.dcmread(s) for s in scans]
         slices.sort(key=lambda x: int(x.InstanceNumber) if x.InstanceNumber is not None else 0)
         images = np.stack([s.pixel_array for s in slices])
         images = images.astype(np.int64)
@@ -554,14 +554,17 @@ def main(args):
     functions = [func for name, func in inspect.getmembers(sys.modules[__name__]) if name.startswith('func')]
     functions = sorted(functions, key=lambda f: int(re.search(r'\d+', f.__name__).group()))
 
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     if 'dicom' in df['subject_type'].values:
         tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
-        with open(tag_filename, 'rb') as file:
+        tag_path = os.path.join(script_dir, tag_filename)
+        with open(tag_path, 'rb') as file:
             tag_data = yaml.safe_load(file)
         total_tags = sum(len(value) if isinstance(value, list) else 1 for value in tag_data.values())
     else:
         tag_filename = "MRI_TAGS.yaml" if scan_type == "MRI" else "CT_TAGS.yaml"
-        with open(tag_filename, 'rb') as file:
+        tag_path = os.path.join(script_dir, tag_filename)
+        with open(tag_path, 'rb') as file:
             tag_data = yaml.safe_load(file)
         sample_image = sitk.ReadImage(df['path'][0])
         sample_tags = extract_tags(sample_image, tag_data, file_type=df['subject_type'][0], image_shape=sitk.GetArrayFromImage(sample_image).shape)
