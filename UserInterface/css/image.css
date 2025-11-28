@@ -1,0 +1,240 @@
+/* ============================
+ * IMAGE PANEL
+ * ============================ */
+
+#panelimage {
+  padding: 10px;
+}
+
+/* Big rounded participant box (P#, etc.) */
+.image-participant-block {
+  border: 4px solid #44aadd;
+  border-radius: 20px;
+  margin: 20px 0;
+  padding: 8px;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Participant title bar */
+.image-participant-title {
+  background: #44aadd;
+  color: #ffffff;
+  text-align: center;
+  margin: -8px -8px 10px -8px;
+  padding: 6px;
+  font-weight: bold;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.image-participant-title .image-participant-pid{
+  font-weight: 400;
+}
+
+.image-participant-title .image-participant-patient{
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Lightbox */
+#img-lightbox{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+#img-lightbox.is-open{
+  display: flex;
+}
+#img-lightbox .img-lightbox-content{
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+#img-lightbox-body{
+  display: flex;
+  gap: 12px;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+#img-lightbox-body img{
+  width: 30vw;
+  height: auto;
+  max-width: 32vw;
+  max-height: 70vh;
+  object-fit: contain;
+  background: #000;
+  border: 2px solid #fff;
+  border-radius: 4px;
+}
+#img-lightbox-caption{
+  color: #fff;
+  font-size: 14px;
+}
+.lb-channel{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+/* Layout of scan cells inside a participant */
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 6px;   /* space between scans */
+  row-gap: 12px;
+  align-items: flex-start;
+  justify-content: center;   /* center all scans in the participant block */
+}
+
+/* One scan cell – width comes from content */
+.image-cell {
+  --channels: 1;
+  --thumb-h: 110px;        /* base thumbnail height; scaled by ROW/COL via aspect-ratio */
+  padding: 2px 2px 6px 2px;
+  text-align: center;
+  box-sizing: border-box;
+  flex: 0 0 auto;          /* let content decide width */
+}
+
+/* Scan index (slice number) with horizontal line */
+.image-index {
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  display: block;
+  width: 100%;             /* underline spans whole scan cell */
+  border-bottom: 1px solid #444;
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+/* Row that holds thumbnails for a scan */
+.image-row {
+  display: flex;
+  gap: 2px;                /* space between channels (im / fg / bg) */
+  margin-top: 2px;
+}
+
+/* Base thumbnail rule:
+   height fixed, width from aspect-ratio (set in JS) */
+.image-row img {
+  display: block;
+  height: var(--thumb-h);
+  width: auto;             /* width determined from height + aspect-ratio */
+  object-fit: contain;     /* never crop image */
+  background: #000;
+  cursor: pointer;
+}
+
+/* Optional: slightly adjust heights based on channel count */
+.image-cell.chan-3 .image-row img {
+  height: 90px;
+}
+
+.image-cell.chan-2 .image-row img {
+  height: 110px;
+}
+
+.image-cell.chan-1 .image-row img {
+  height: 140px;
+}
+
+/* Labels under thumbnails */
+.image-labels {
+  font-size: 10px;
+  color: gray;
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+/* Each label lines up with its image above */
+.image-labels span {
+  flex: 1 1 0;             /* equal share for each channel label */
+  text-align: center;
+  cursor: pointer;
+}
+
+/* ========================================
+ * CATEGORY COLORS (from Color-by CAT1..CAT6)
+ * We reuse the same tokens as the legend / PCP / bar.
+ * image.js adds .cat1..cat6 and data-cat on each participant block.
+ * ======================================== */
+
+/* CAT1 */
+.image-participant-block.cat1 {
+  border-color: var(--color-select-cat1, var(--color-base-cat1, #c7d8ff));
+}
+.image-participant-title.cat1 {
+  background: var(--color-select-cat1, var(--color-base-cat1, #c7d8ff));
+  color: #ffffff;
+}
+
+/* CAT2 */
+.image-participant-block.cat2 {
+  border-color: var(--color-select-cat2, var(--color-base-cat2, #f6b7ce));
+}
+.image-participant-title.cat2 {
+  background: var(--color-select-cat2, var(--color-base-cat2, #f6b7ce));
+  color: #ffffff;
+}
+
+/* CAT3 */
+.image-participant-block.cat3 {
+  border-color: var(--color-select-cat3, var(--color-base-cat3, #90ffe0));
+}
+.image-participant-title.cat3 {
+  background: var(--color-select-cat3, var(--color-base-cat3, #90ffe0));
+  color: #ffffff;
+}
+
+/* CAT4 */
+.image-participant-block.cat4 {
+  border-color: var(--color-select-cat4, var(--color-base-cat4, #ffddb3));
+}
+.image-participant-title.cat4 {
+  background: var(--color-select-cat4, var(--color-base-cat4, #ffddb3));
+  color: #ffffff;
+}
+
+/* CAT5 */
+.image-participant-block.cat5 {
+  border-color: var(--color-select-cat5, var(--color-base-cat5, #e2caff));
+}
+.image-participant-title.cat5 {
+  background: var(--color-select-cat5, var(--color-base-cat5, #e2caff));
+  color: #ffffff;
+}
+
+/* CAT6 */
+.image-participant-block.cat6 {
+  border-color: var(--color-select-cat6, var(--color-base-cat6, #c2f2f0));
+}
+.image-participant-title.cat6 {
+  background: var(--color-select-cat6, var(--color-base-cat6, #c2f2f0));
+  color: #ffffff;
+}
+
+/* Optional: a tiny emphasis for all participant blocks */
+.image-participant-block.cat1,
+.image-participant-block.cat2,
+.image-participant-block.cat3,
+.image-participant-block.cat4,
+.image-participant-block.cat5,
+.image-participant-block.cat6 {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.03);
+}

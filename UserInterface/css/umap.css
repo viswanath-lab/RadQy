@@ -1,0 +1,98 @@
+.umap-form{
+  display:grid;
+  grid-template-columns:auto 105px;
+  row-gap:4px;
+  column-gap:12px;
+  align-items:center;
+  width:max-content;
+  padding:8px 0px;
+  transform: translateY(30px);
+}
+
+/* Chart-like small controls */
+.ctrlsm{
+  height:var(--btn-h-sm);
+  min-width:56px;
+  padding:0 8px;
+  font-size:10px;
+  color:var(--color-emory-blue);
+  border:1px solid var(--color-emory-blue);
+  border-radius:var(--radius-md);
+  background:#fff;
+  box-shadow:var(--shadow-1);
+}
+.ctrlsm:focus{
+  outline:none;
+  box-shadow:0 0 0 2px rgba(0,47,108,.15);
+}
+
+/* Labels match chart labels */
+.umap-form label{
+  font-weight:normal;
+  text-align:right;
+  display:block;
+  width:100%;
+  padding-right:6px;
+  color:var(--color-muted);
+}
+
+/* ---------- Select (distanceFn) with the same ▼ triangle ---------- */
+/* Wrap the select in .select-wrap (see HTML snippet below) */
+.select-wrap{ position:relative; display:inline-block; }
+.select-wrap select.ctrlsm{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  -moz-appearance:none!important;
+  padding-right:22px;            /* room for ▼ */
+  background:#fff;
+  color:var(--color-emory-blue);
+  border:1px solid var(--color-emory-blue);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-1);
+}
+.select-wrap.hasmenu::after{
+  content:"▾";
+  position:absolute;
+  right:8px; top:60%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  color:var(--color-emory-blue);
+  font-size:16px;
+  line-height:1;
+}
+
+/* size of the input itself – leaves room for the spin control */
+#panelumap .ctrlsm[type="number"]{
+  height: var(--btn-h-sm);
+  line-height: var(--btn-h-sm);
+  padding-right: 5.75px;           /* space for arrows */
+  -moz-appearance: textfield;    /* hide FF default */
+  box-sizing: border-box;
+}
+
+/* WebKit (Chrome/Edge/Safari): shrink, keep centered, don't lift */
+#panelumap .ctrlsm[type="number"]::-webkit-inner-spin-button,
+#panelumap .ctrlsm[type="number"]::-webkit-outer-spin-button{
+  -webkit-appearance: inner-spin-button;
+  transform: scale(0.50) translateY(0);   /* smaller, no upward shift */
+  transform-origin: center center;
+  margin: 0;
+  opacity: .0;                             /* hidden by default */
+  transition: opacity .15s ease;
+}
+
+/* show arrows only on focus */
+#panelumap .ctrlsm[type="number"]:focus::-webkit-inner-spin-button,
+#panelumap .ctrlsm[type="number"]:focus::-webkit-outer-spin-button{
+  opacity: .6;
+}
+
+/* Firefox: hide until focus, then show */
+#panelumap .ctrlsm[type="number"] { -moz-appearance: textfield; }
+#panelumap .ctrlsm[type="number"]:focus { -moz-appearance: number-input; }
+
+#panelumap .toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}

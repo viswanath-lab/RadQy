@@ -1,0 +1,102 @@
+
+/* Parent becomes two columns via flex in split mode */
+/*body.layout-report-split .grid{
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}*/
+
+/* 2-column split layout */
+body.layout-report-split .grid{
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr);
+  grid-auto-flow: row dense;
+  gap: 12px;
+}
+
+
+
+/* Left column: its own stacked grid; packs upward like full-page */
+body.layout-report-split .col-left{
+  flex: 1 1 auto;
+  display: grid;
+  grid-auto-rows: min-content;
+  row-gap: 0;
+}
+
+
+/* Open-report confirmation bar */
+#report-open-banner {
+  position: fixed;
+  left: 50%;
+  top: 92px;              /* just under the header divider */
+  transform: translateX(-41%);
+  z-index: 9999;
+
+  background: #ffffff;
+  border: 2px solid var(--color-emory-blue);
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: var(--shadow-1);
+  font-size: 13px;
+  color: var(--color-text);
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#report-open-banner button {
+  font-size: 12px;
+  padding: 3px 16px;
+}
+
+
+
+/* ===== shake/buzz animation (IN-PLACE, CORRECTED) ===== */
+@keyframes rqy-shake {
+  0%   { transform: translateX(-41%); }
+  25%  { transform: translateX(calc(-41% - 4px)); }
+  50%  { transform: translateX(calc(-41% + 4px)); }
+  75%  { transform: translateX(calc(-41% - 4px)); }
+  100% { transform: translateX(-41%); }
+}
+
+#report-open-banner.shake {
+  animation: rqy-shake 0.25s ease;
+}
+
+
+#report-open-banner.shake {
+  animation: rqy-shake 0.3s ease;
+}
+
+
+
+/* 2-column split: left half = main panels, right half = report */
+body.layout-report-split .grid{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* 50 / 50 */
+  grid-auto-flow: row dense;
+  gap: 12px;
+}
+
+/* Right column: report fixed in the half-page view */
+body.layout-report-split #panelreport{
+  grid-column: 2 / 3;          /* right column */
+  align-self: flex-start;      /* stick to top of column */
+  position: sticky;
+  top: 96px;                   /* just under header – tweak if needed */
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+}
+
+/* In half-page (report split) mode make the Color-by panel compact */
+body.layout-report-split #panellegend.panelthin{
+  justify-self: end;      /* push it to the far right of the column   */
+  width: max-content;     /* box shrinks to just fit its contents      */
+  padding: 1px 8px;       /* smaller padding so the bar is not tall    */
+  margin-top: 0;          /* keep it tight under the tags row          */
+}

@@ -1,0 +1,249 @@
+/*************************************************
+ * BASES
+ *************************************************/
+
+/* page base */
+html,body{
+  margin:0;
+  padding:0;
+  background:var(--color-bg);
+  color:var(--color-text);
+  font-family:var(--font-body);
+  overflow-x: hidden;
+}
+
+/* generic horizontal group */
+.row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+/* push a block to the far right in flex rows */
+.ml-auto{ margin-left:auto; }
+
+/* core button style */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:var(--btn-pad-y) var(--btn-pad-x);
+  border:1px solid var(--color-emory-blue);
+  border-radius:var(--radius-md);
+  color:var(--color-emory-blue);
+  background:#fff;
+  box-shadow:var(--shadow-1);
+}
+
+/* big buttons in header and main controls */
+.btnbig{
+  height:var(--btn-h-big);
+  min-width:40px;
+  font-weight:500;
+  font-size:14px;
+}
+
+/* mid buttons used in table toolbar and switch */
+.btnmid{
+  height:var(--btn-h-mid);
+  min-width:40px;
+  font-size:11px;
+}
+
+/* small buttons and selects for chart and umap controls */
+.btnsm{
+  height:var(--btn-h-sm);
+  min-width:56px;
+  font-size:10px;
+}
+
+/* active or toggled on state for buttons */
+.btnon{
+  background:var(--color-emory-blue);
+  color:#fff;
+  border-color:var(--color-emory-blue);
+}
+
+/* warning style used by reset button */
+.btnwarn{
+  border-color:var(--color-emory-yellow);
+  color:var(--color-emory-yellow);
+  position: absolute;
+  top: 40px;
+  right: 20px;
+  margin: 0;
+  font-size:14px;
+}
+
+
+/* ---------- UNIVERSAL BUTTON HOVER ---------- */
+.btn:hover:not(:disabled),
+.btnbig:hover:not(:disabled),
+.btnmid:hover:not(:disabled),
+.btnsm:hover:not(:disabled),
+.btnlg:hover:not(:disabled) {
+  background-color: var(--color-btn-hover);
+  color: #fff;
+  border-color: var(--color-btn-hover);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Keep the "on" state distinct — slightly darker hover */
+.btnon:hover:not(:disabled) {
+  background-color: #001f4a; /* deeper Emory blue */
+  border-color: #001f4a;
+}
+
+/* Separate hover color for warning (Reset) buttons */
+.btnwarn:hover:not(:disabled) {
+  background-color: var(--color-emory-yellow);
+  color: #000;
+  border-color: var(--color-emory-yellow);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.9);
+}
+/*************************************************
+
+/* thin divider under the info bar */
+.divider{
+  height:3px;
+  background:var(--color-emory-blue);
+  position:static;
+  margin-top:0px;
+}
+
+/* info row under header that always stays visible */
+.infotop{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 16px;
+  color:var(--color-muted);
+  font-size:13px;
+}
+
+/* main content grid */
+.grid{
+  display:grid;
+  grid-template-columns:1fr;
+  row-gap:0;
+  padding:0 var(--page-pad-x) 16px;
+
+  max-width: 100vw;   /* lock layout to viewport width */
+  width: 100%;        /* prevent stretching */
+  overflow-x: hidden; /* block layout pushing when table expands */
+  box-sizing: border-box;
+}
+
+
+
+/* card style for each panel */
+.panel{
+  position:relative;
+  border:1px solid var(--color-border);   /* opx remove the panel borders */
+  border-radius:var(--radius-lg);
+  padding:12px 12px 5px;
+  background:#fff;
+  min-height:200px;                             /* default min-height */
+}
+
+/* thinner panel variant for small inline sections like custom selection */
+.panelthin{
+  min-height:auto;
+  padding:8px 12px;
+}
+
+/* panel titles */
+.panel h2{
+  margin:8px 8px 0 8px;
+  font-family:var(--font-heading);
+  font-weight:600;
+  color:var(--color-emory-blue);
+  font-size:20px;
+}
+
+/* responsive tweak for wide screens */
+@media(min-width:1100px){
+  .grid{ grid-template-columns:1fr; }
+}
+
+.panelrow-two{
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; /* opt | legend | color */
+  column-gap: 0px;      /* space between panels */
+  margin-top: 0px;
+}
+
+
+.btnlg{
+  height:34px;
+  min-width:120px;
+  font-weight:600;
+}
+
+.ctl-label{
+  color:var(--color-muted);
+  font-size:10px;
+}
+
+.hasmenu{ position:relative; padding-right:25px; }
+.hasmenu::after{
+  content:"▾";
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+
+
+/* Hide the top buttons and meta during splash */
+.is-splash .topcenter,
+.is-splash #infometa { display:none; }
+
+/* Hide the app grid during splash */
+.is-splash .grid { display:none; }
+
+/* ===== Centered splash (View Results) ===== */
+.center-stage{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  height:calc(60vh - 120px); /* leaves room for header + rule */
+  text-align:center;
+}
+
+#upload-button.btnbig{
+  padding:10px 20px;
+  font-size:1.05rem;
+  border-radius:8px;
+  box-shadow:0 2px 4px rgba(0,0,0,.12);
+  font-weight:500;
+}
+
+/* hint line under the button */
+.upload-hint{
+  margin-top:1.5rem;
+  font-size:0.95rem;
+  color:#8b1c4a;
+  font-style:italic;
+}
+.upload-hint code{ font-family:"Courier New", monospace; color:#b51f52; }
+.upload-hint .path{ font-family:"Courier New", monospace; color:#4e6a89; }
+
+/* Collapse any element with the [hidden] attribute */
+[hidden]{
+  display: none !important;
+}
+
+/* Only apply the big default min-height to visible panels */
+.grid > .panel[hidden]{
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+

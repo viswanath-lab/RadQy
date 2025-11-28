@@ -1,0 +1,162 @@
+#panellegend.panelthin{
+  min-height: 0;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+/* legend content layout */
+#legendhost .legend-row{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #111827;
+}
+
+
+#legendhost .legend-item{
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* default swatch: tall vertical for core counts */
+#legendhost .legend-swatch{
+  width: 40px;
+  height: 16px;
+  border-radius: 0;
+  border: 1px solid #0f2f34 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 9px;
+  color: #0f2f34;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+/* taller variant (used in markup for consistency) */
+#legendhost .legend-swatch-tall {
+  width: 16px;
+  height: 40px;
+  font-size: 9px;
+}
+
+/* color swatches based on your tokens */
+#legendhost .swatch-tag{
+  background: var(--color-tag);
+}
+
+#legendhost .swatch-iqm{
+  background: var(--color-iqm);
+}
+
+#legendhost .swatch-aux{
+  background: var(--color-aux);
+}
+
+#legendhost .swatch-ext{
+  background: var(--color-ext);
+}
+
+#legendhost .legend-separator{
+  display: inline-block;
+  width: 1px;
+  height: 30px;
+  margin: 0 8px;
+  background: #4b5563;
+}
+
+#legendhost .legend-total{
+  font-weight: 600;
+  color: #111827;
+}
+
+/* class-color swatches for Color-by legend */
+.swatch-cat1 { background: var(--color-base-cat1); }
+.swatch-cat2 { background: var(--color-base-cat2); }
+.swatch-cat3 { background: var(--color-base-cat3); }
+.swatch-cat4 { background: var(--color-base-cat4); }
+.swatch-cat5 { background: var(--color-base-cat5); }
+.swatch-cat6 { background: var(--color-base-cat6); }
+.swatch-cat1-sel { background: var(--color-select-cat1); color: #fff; }
+.swatch-cat2-sel { background: var(--color-select-cat2); color: #fff; }
+.swatch-cat3-sel { background: var(--color-select-cat3); color: #fff; }
+.swatch-cat4-sel { background: var(--color-select-cat4); color: #fff; }
+.swatch-cat5-sel { background: var(--color-select-cat5); color: #fff; }
+.swatch-cat6-sel { background: var(--color-select-cat6); color: #fff; }
+.legend-swatch-h.swatch-cat1-sel,
+.legend-swatch-h.swatch-cat2-sel,
+.legend-swatch-h.swatch-cat3-sel,
+.legend-swatch-h.swatch-cat4-sel,
+.legend-swatch-h.swatch-cat5-sel,
+.legend-swatch-h.swatch-cat6-sel {
+  color: #fff !important;
+}
+
+/* force light text on darker bases */
+.swatch-cat1,
+.swatch-cat4,
+.swatch-cat5,
+.swatch-cat6 {
+  color: #ffffff;
+}
+
+/* horizontal swatch helper for color-by */
+.legend-swatch-h{
+  width: 20px;
+  height: 10px;
+  border-radius: 0;
+  border: 1px solid #0f2f34 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 9px;
+  color: inherit;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+/* spacing for color-by legend items */
+.legend-colorby{
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legend-colorby-item{
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* neutral swatches for total / selected */
+.swatch-total{
+  background: #ffffff;
+  color: #000000;
+  border-color: #94a3b8 !important;
+}
+.swatch-selected{
+  background: #ffffff;
+  color: #000000;
+  border-color: #0f2f34 !important;
+}
+.legend-swatch-h.swatch-total,
+.legend-swatch-h.swatch-selected {
+  background: #ffffff;
+  color: #000000 !important;
+  border-color: #0f2f34 !important;
+  font-weight: 700;
+}
+
+.legend-total-label{
+  font-size: 11px;
+  color: #111827;
+  margin-left: 6px;
+}

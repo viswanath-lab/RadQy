@@ -1,0 +1,247 @@
+/*************************************************
+ * PCP STYLES
+ *************************************************/
+
+/* containers */
+.chart-pane {
+  width: 100%;
+  height: 350px;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+
+/* Background and foreground paths */
+.background-path {
+  stroke: #bbb;
+  stroke-width: 1;
+  fill: none;
+  opacity: 0.5;
+}
+
+.foreground-path {
+  stroke: var(--cat1-base);
+  stroke-width: 2px;
+  fill: none;
+  opacity: 0.4;
+  cursor: pointer;
+  transition: stroke 0.12s linear, stroke-width 0.12s linear, opacity 0.12s linear;
+}
+
+/* category-based colors */
+.foreground-path.cat-0 { stroke: var(--cat2-base); }
+.foreground-path.cat-1 { stroke: var(--cat3-base); }
+.foreground-path.cat-2 { stroke: var(--cat4-base); }
+.foreground-path.cat-3 { stroke: var(--cat5-base); }
+.foreground-path.cat-4 { stroke: var(--cat6-base); }
+.foreground-path.cat-5 { stroke: var(--cat1-base); }
+
+.foreground-path.cat-0.pcp-hover-target-line { stroke: var(--cat2-hover) !important; }
+.foreground-path.cat-1.pcp-hover-target-line { stroke: var(--cat3-hover) !important; }
+.foreground-path.cat-2.pcp-hover-target-line { stroke: var(--cat4-hover) !important; }
+.foreground-path.cat-3.pcp-hover-target-line { stroke: var(--cat5-hover) !important; }
+.foreground-path.cat-4.pcp-hover-target-line { stroke: var(--cat6-hover) !important; }
+.foreground-path.cat-5.pcp-hover-target-line { stroke: var(--cat1-hover) !important; }
+
+.pcp-selected-line {
+  stroke: var(--cat1-selected) !important;
+  stroke-width: 4px !important;
+  opacity: 1 !important;
+}
+
+.pcp-hover-target-line {
+  stroke: var(--cat1-hover) !important;
+  stroke-width: 3px !important;
+  opacity: 1 !important;
+}
+
+/* axes */
+.axis text {
+  fill: #333;
+  font-size: 9px;
+  font-family: var(--font);
+  font-weight: 400;
+  pointer-events: none;
+}
+.axis line {
+  stroke: #999;
+  stroke-width: 1px;
+  opacity: 0.6;
+}
+.axis path.domain {
+  stroke: #000;
+  stroke-width: 1px;
+}
+
+.pcp-axis-stem {
+  stroke: #444;
+  stroke-width: 1px;
+}
+
+.pcp-part-axis-line {
+  stroke: #444;
+  stroke-width: 1px;
+}
+
+.pcp-part-tick-line {
+  stroke: #444;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+  transition: stroke 0.12s linear, stroke-width 0.12s linear;
+}
+
+.pcp-part-tick-label {
+  fill: #222;
+  font-weight: 400;
+  line-height: 1;
+  pointer-events: none;
+  transition: fill 0.12s linear, font-weight 0.12s linear, font-size 0.12s linear,
+              stroke 0.12s linear, stroke-width 0.12s linear, opacity 0.12s linear;
+}
+
+.pcp-hover-target-tick .pcp-part-tick-line {
+  stroke: var(--row-selected-bg) !important;
+  stroke-width: 2px !important;
+}
+.pcp-hover-target-tick .pcp-part-tick-label {
+  opacity: 1 !important;
+  fill: var(--row-selected-bg) !important;
+  font-weight: 700 !important;
+  font-size: 1.2em !important;
+  paint-order: stroke;
+  stroke: var(--row-selected-fg);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+
+.pcp-selected-tick .pcp-part-tick-line {
+  stroke: var(--row-selected-bg) !important;
+  stroke-width: 2px !important;
+}
+.pcp-selected-tick .pcp-part-tick-label {
+  opacity: 1 !important;
+  fill: var(--row-selected-bg) !important;
+  font-weight: 700 !important;
+  paint-order: stroke;
+  stroke: var(--row-selected-fg);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+
+.pcp-axis-title {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #000;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.pcp-axis-aux .pcp-axis-title    { fill: var(--color-aux-border); }
+.pcp-axis-tag .pcp-axis-title   { fill: var(--color-tags-border); }
+.pcp-axis-iqms .pcp-axis-title  { fill: var(--color-iqms-border); }
+.pcp-axis-ext .pcp-axis-title   { fill: var(--color-ext-border); }
+.pcp-axis-title-bg {
+  pointer-events: none;
+  stroke: none;
+  opacity: 1;
+}
+.pcp-axis-tag-bg  { fill: var(--color-tags-border); }
+.pcp-axis-iqms-bg { fill: var(--color-iqms-border); }
+.pcp-axis-ext-bg  { fill: var(--color-ext-border); }
+.pcp-axis-other-bg{ fill: #ececec; }
+
+.pcp-ext-label {
+  font-size: 12px;
+  font-weight: 500;
+  fill: #000;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.pcp-ext-label-max { dominant-baseline: baseline; }
+.pcp-ext-label-min { dominant-baseline: hanging; }
+
+.pcp-drag-handle { cursor: move; }
+
+/* category ticks */
+.pcp-cat-tick text { font-size: 12px; }
+.pcp-hover-target-tick.pcp-cat-tick text { font-size: 1em !important; transform: translateX(0) scale(1) !important; }
+
+/* brushing */
+.dimension .brush .extent {
+  fill: rgba(0, 128, 255, 0.18);
+  stroke: rgba(0, 128, 255, 0.8);
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+  rx: 4;
+  ry: 4;
+}
+.dimension .brush .resize rect {
+  fill: rgba(0, 128, 255, 0.9);
+  stroke: none;
+  rx: 2;
+  ry: 2;
+}
+
+/* tooltip */
+.d3-tip {
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  font-size: 11px;
+  font-family: var(--font);
+  line-height: 1.3;
+  padding: 6px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: 0 3px 8px rgba(0,0,0,.4);
+}
+.d3-tip .tip-name { font-weight: 600; color: var(--color-accent); }
+.d3-tip .tip-val  { font-weight: 400; color: #fff; }
+
+/* select controls */
+.radqy-select{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.radqy-select__btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  height: 28px;
+  border: 1px solid #bbb;
+  background: #fff;
+  color: #111;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.radqy-select__menu{
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 120px;
+  max-height: 220px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  margin-top: 4px;
+  display: none;
+  z-index: 10;
+}
+.radqy-select.is-open .radqy-select__menu{ display: block; }
+.radqy-select__opt{
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.radqy-select__opt:hover{ background: #eef1f5; }
