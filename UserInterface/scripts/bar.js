@@ -12,104 +12,10 @@ function cssVar(n,f){const v=getComputedStyle(document.documentElement).getPrope
 function palette(i){const arr=[cssVar('--cat2-base','#5ac8fa'),cssVar('--cat3-base','#af52de'),cssVar('--cat4-base','#ffcc00'),cssVar('--cat5-base','#34c759'),cssVar('--cat6-base','#ff9500')];return arr[i%arr.length];}
 
 
-function ensureUnifiedLegendHost(){
-  if (document.getElementById('unified-legend-row')) return;
-  const host = document.getElementById('chart-shell') || document.body;
-  const row = document.createElement('div');
-  row.id = 'unified-legend-row';
-  const box = document.createElement('div');
-  box.id = 'unified-legend';
-  const secTable = document.createElement('div');
-  secTable.id = 'legend-sec-table';
-  secTable.className = 'legend-section';
-  const sep = document.createElement('div');
-  sep.className = 'legend-sep';
-  const secBar = document.createElement('div');
-  secBar.id = 'legend-sec-bar';
-  secBar.className = 'legend-section';
-  box.appendChild(secTable);
-  box.appendChild(sep);
-  box.appendChild(secBar);
-  row.appendChild(box);
-  host.appendChild(row);
-}
-
-window.updateBarLegendVisibility = function(){
-  ensureUnifiedLegendHost();
-  const row = document.getElementById('unified-legend-row');
-  if (row) row.style.display = 'block';
-};
-
-window.fillTableLegend = function(groups){
-  ensureUnifiedLegendHost();
-  const sec = document.getElementById('legend-sec-table');
-  if (!sec) return;
-  sec.innerHTML = '';
-  groups.forEach(g=>{
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    const sw = document.createElement('span');
-    sw.className = 'legend-box legend-box--v ' + (g.cls || '');
-    const t = document.createElement('span');
-    t.textContent = g.label;
-    item.appendChild(sw);
-    item.appendChild(t);
-    sec.appendChild(item);
-  });
-};
-
-window.updateBarLegend = function(){
-  ensureUnifiedLegendHost();
-  const sec = document.getElementById('legend-sec-bar');
-  if (!sec) return;
-  sec.innerHTML = '';
-  const col = window.CHART_STATE?.axisBy?.column || null;
-  const cats = window.CHART_STATE?.axisBy?.categories || [];
-  if (!col || col === 'P#'){
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    const sw = document.createElement('span');
-    sw.className = 'legend-box legend-box--h';
-    const c = getComputedStyle(document.documentElement).getPropertyValue('--cat1-base').trim() || '#B7D0FF';
-    sw.style.backgroundColor = c;
-    sw.style.borderColor = c;
-    const t = document.createElement('span');
-    t.textContent = 'Participant';
-    item.appendChild(sw);
-    item.appendChild(t);
-    sec.appendChild(item);
-  } else {
-    cats.forEach((c,i)=>{
-      const item = document.createElement('div');
-      item.className = 'legend-item';
-      const sw = document.createElement('span');
-      sw.className = 'legend-box legend-box--h';
-      const colr = (function(i){
-        const css = getComputedStyle(document.documentElement);
-        const arr = [
-          css.getPropertyValue('--cat2-base').trim() || '#5ac8fa',
-          css.getPropertyValue('--cat3-base').trim() || '#af52de',
-          css.getPropertyValue('--cat4-base').trim() || '#ffcc00',
-          css.getPropertyValue('--cat5-base').trim() || '#34c759',
-          css.getPropertyValue('--cat6-base').trim() || '#ff9500'
-        ];
-        return arr[i % arr.length];
-      })(i);
-      sw.style.backgroundColor = colr;
-      sw.style.borderColor = colr;
-      const t = document.createElement('span');
-      t.textContent = c;
-      item.appendChild(sw);
-      item.appendChild(t);
-      sec.appendChild(item);
-    });
-  }
-  window.updateBarLegendVisibility();
-};
-
-window.updateBarLegendVisibility=function(){ensureUnifiedLegendHost();const row=document.getElementById('unified-legend-row');if(row)row.style.display='block';};
-window.fillTableLegend=function(groups){ensureUnifiedLegendHost();const sec=document.getElementById('legend-sec-table');if(!sec)return;sec.innerHTML='';groups.forEach(g=>{const item=document.createElement('div');item.className='legend-item';const sw=document.createElement('span');sw.className='legend-box legend-box--v '+g.cls;const t=document.createElement('span');t.textContent=g.label;item.appendChild(sw);item.appendChild(t);sec.appendChild(item);});};
-window.updateBarLegend=function(){ensureUnifiedLegendHost();const sec=document.getElementById('legend-sec-bar');if(!sec)return;sec.innerHTML='';const col=window.CHART_STATE?.axisBy?.column||null;const cats=window.CHART_STATE?.axisBy?.categories||[];if(!col||col==='P#'){const item=document.createElement('div');item.className='legend-item';const sw=document.createElement('span');sw.className='legend-box legend-box--h';sw.style.backgroundColor=cssVar('--cat1-base','#B7D0FF');sw.style.borderColor=sw.style.backgroundColor;const t=document.createElement('span');t.textContent='Participant';item.appendChild(sw);item.appendChild(t);sec.appendChild(item);}else{cats.forEach((c,i)=>{const item=document.createElement('div');item.className='legend-item';const sw=document.createElement('span');sw.className='legend-box legend-box--h';const colr=palette(i);sw.style.backgroundColor=colr;sw.style.borderColor=colr;const t=document.createElement('span');t.textContent=c;item.appendChild(sw);item.appendChild(t);sec.appendChild(item);});}window.updateBarLegendVisibility();};
+// Legend removed (handled elsewhere)
+window.updateBarLegendVisibility = function(){};
+window.fillTableLegend = function(){};
+window.updateBarLegend = function(){};
 
 function setDefaultMetric(dataset){
   if(!window.CHART_STATE) window.CHART_STATE = {};
@@ -179,7 +85,6 @@ const x=d3.scale.ordinal().domain(data.map(d=>d.p_label)).rangeRoundBands([0,cha
 const maxY=d3.max(data,d=>d.value)||0;const y=d3.scale.linear().domain([0,maxY]).range([chartH,0]);
 const xAxis=d3.svg.axis().scale(x).orient('bottom');const yAxis=d3.svg.axis().scale(y).ticks(4).orient('right').innerTickSize(-chartW).outerTickSize(0).tickPadding(10);
 svgG.selectAll('*').remove();d3.selectAll('.d3-tip').style('display','none');
-if(!document.getElementById('bar-legend')){const leg=document.createElement('div');leg.id='bar-legend';leg.style.position='absolute';leg.style.top='-20px';leg.style.left='70%';leg.style.transform='translateX(-50%)';leg.style.zIndex='10';document.getElementById('chart-shell').appendChild(leg);}
 const gx=svgG.append('g').attr('class','x axis').attr('transform','translate(0,'+chartH+')').call(xAxis);
 (function(){const n=data.length;const stripP=(n>100);const step=(n>240)?3:(n>160)?2:1;const rotate=(n>80)?65:(n>50)?45:0;const fontPx=(n<=50)?12:(n<=80)?11:(n<=120)?10:9;gx.selectAll('text').text(function(d,i){const lab=stripP?String(d).replace(/^P/i,''):String(d);return(i%step===0)?lab:'';}).style('font-size',fontPx+'px').style('text-anchor',rotate?'start':'middle').attr('dx',rotate?'0.5em':'0').attr('dy',rotate?'0.25em':'.71em').attr('transform',rotate?'rotate('+rotate+')':null);})();
 svgG.append('g').attr('class','y axis').attr('transform','translate('+chartW+',0)').call(yAxis);

@@ -45,9 +45,14 @@ function RADQY_recomputeImagePanels() {
 }
 
 // Keep image/fg/bg panels in sync on selection and mask toggle changes
-document.addEventListener("radqy:selection-changed", () => {
+document.addEventListener("radqy:selection-changed", (e) => {
+  const indices = Array.isArray(e?.detail?.indices) ? e.detail.indices : [];
   RADQY_recomputeImagePanels();
   RADQY.applyVisibility();
+  // notify image/others with selection detail (used by image panel)
+  document.dispatchEvent(new CustomEvent("radqy:selection:detail", {
+    detail: { indices }
+  }));
 });
 
 document.addEventListener("radqy:masks-changed", () => {
@@ -66,7 +71,7 @@ RADQY.PANELS = RADQY.MAIN.concat("report");
 RADQY._STORAGE_KEY = "radqy_panel_visibility";
 RADQY._DEFAULT_VIS = {
   table:  true,
-  chart:  false,
+  chart:  true,
   umap:   false,
   image:  false,
   fgmask: false,

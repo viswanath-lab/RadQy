@@ -228,6 +228,32 @@
   color:#ffffff !important;
 }
 
+/* hover sync from other panels — use current Color-by cat */
+.radqy-table tbody tr.row-hover-sync[data-cat="1"],
+.radqy-table tbody tr.row-hover-sync[data-cat="1"] td{
+  background: var(--color-hover-cat1, #e8f0ff) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="2"],
+.radqy-table tbody tr.row-hover-sync[data-cat="2"] td{
+  background: var(--color-hover-cat2, #ffe0f0) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="3"],
+.radqy-table tbody tr.row-hover-sync[data-cat="3"] td{
+  background: var(--color-hover-cat3, #d6fff3) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="4"],
+.radqy-table tbody tr.row-hover-sync[data-cat="4"] td{
+  background: var(--color-hover-cat4, #ffe8cc) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="5"],
+.radqy-table tbody tr.row-hover-sync[data-cat="5"] td{
+  background: var(--color-hover-cat5, #f0e3ff) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="6"],
+.radqy-table tbody tr.row-hover-sync[data-cat="6"] td{
+  background: var(--color-hover-cat6, #d8f8f6) !important;
+}
+
 /*************************************************
  * ADD DROPDOWN
  *************************************************/
