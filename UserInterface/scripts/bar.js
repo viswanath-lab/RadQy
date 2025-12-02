@@ -76,25 +76,40 @@ const _state={currentMetric:null,selectedCase:null,axisBy:{kind:'participant',co
 function prettyNumber(v){if(v==null||isNaN(v))return'';return(Math.round(v*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});}
 function pLabelForIndex(idx){return'P'+(idx+1);}
 function getMergedDataset(){const MAIN=global.DATA?.MAIN||{rows:[]};const TAGS=global.DATA?.TAGS||{rows:[]};const IQMS=global.DATA?.IQMS||{rows:[]};const EXTS=global.DATA?.EXTS||{rows:[]};const AUXS=global.DATA?.AUXS||{rows:[]};const n=Math.max(MAIN.rows.length,TAGS.rows.length,IQMS.rows.length,EXTS.rows.length,AUXS.rows.length);const out=[];for(let i=0;i<n;i++){out.push(Object.assign({},MAIN.rows[i]||{},TAGS.rows[i]||{},IQMS.rows[i]||{},EXTS.rows[i]||{},AUXS.rows[i]||{}));}return out;}
-function inferNumericHeaders(dataset){if(!dataset.length)return[];const allowed=new Set();(window.DATA?.TAGS?.headers||[]).forEach(h=>allowed.add(h));(window.DATA?.IQMS?.headers||[]).forEach(h=>allowed.add(h));(window.DATA?.EXTS?.headers||[]).forEach(h=>allowed.add(h));(window.DATA?.AUXS?.headers||[]).forEach(h=>allowed.add(h));const headers=Object.keys(dataset[0]||{});const hidden=window.VIEW_STATE?.hiddenHeaders||new Set();const out=[];for(const h of headers){if(!h||!allowed.has(h))continue;if(/^Participant\b/i.test(h))continue;if(h.trim()==='P#')continue;if(hidden.has&&hidden.has(h))continue;let saw=false,allNum=true;for(let r=0;r<dataset.length;r++){const raw=dataset[r][h];if(raw===''||raw==null)continue;const num=(typeof raw==='number')?raw:parseFloat(raw);if(!Number.isFinite(num)){allNum=false;break;}saw=true;}if(saw&&allNum)out.push(h);}return out;}
+function inferNumericHeaders(dataset){
+  if(!dataset.length)return[];
+  const allowed=new Set();
+  (window.DATA?.TAGS?.headers||[]).forEach(h=>allowed.add(h));
+  (window.DATA?.IQMS?.headers||[]).forEach(h=>allowed.add(h));
+  (window.DATA?.EXTS?.headers||[]).forEach(h=>allowed.add(h));
+  (window.DATA?.AUXS?.headers||[]).forEach(h=>allowed.add(h));
+  const headers=Object.keys(dataset[0]||{});
+  const hidden=window.VIEW_STATE?.hiddenHeaders||new Set();
+  const allowAll = allowed.size === 0; // fallback: allow any numeric column
+  const out=[];
+  for(const h of headers){
+    if(!h)continue;
+    if(!allowAll && !allowed.has(h))continue;
+    if(/^Participant\b/i.test(h))continue;
+    if(h.trim()==='P#')continue;
+    if(hidden.has&&hidden.has(h))continue;
+    let saw=false,allNum=true;
+    for(let r=0;r<dataset.length;r++){
+      const raw=dataset[r][h];
+      if(raw===''||raw==null)continue;
+      const num=(typeof raw==='number')?raw:parseFloat(raw);
+      if(!Number.isFinite(num)){allNum=false;break;}
+      saw=true;
+    }
+    if(saw&&allNum)out.push(h);
+  }
+  return out;
+}
 function inferCategoricalHeaders(dataset){if(!dataset.length)return[];const allowed=new Set();(window.DATA?.TAGS?.headers||[]).forEach(h=>allowed.add(h));(window.DATA?.IQMS?.headers||[]).forEach(h=>allowed.add(h));(window.DATA?.EXTS?.headers||[]).forEach(h=>allowed.add(h));(window.DATA?.AUXS?.headers||[]).forEach(h=>allowed.add(h));const headers=Object.keys(dataset[0]||{});const hidden=window.VIEW_STATE?.hiddenHeaders||new Set();const out=[];for(const h of headers){if(!h||!allowed.has(h))continue;if(/^Participant\b/i.test(h))continue;if(h.trim()==='P#')continue;if(hidden.has&&hidden.has(h))continue;let saw=false,anyNonNum=false;for(let r=0;r<dataset.length;r++){const raw=dataset[r][h];if(raw===''||raw==null)continue;const num=(typeof raw==='number')?raw:parseFloat(raw);if(!Number.isFinite(num)){anyNonNum=true;break;}saw=true;}if(saw&&anyNonNum)out.push(h);}return out;}
 function catIdxForValue(v,domain){const i=domain.indexOf(v);return Math.max(0,i);}
 Bar._inferNumeric=inferNumericHeaders;Bar._inferCategorical=inferCategoricalHeaders;
 
 Bar.render=function(svgG,width,height,margin,externalDataset,metric,chartState,getPLabel,onSelect){
-  console.log("BAR render start",{
-    container:{width,height,margin},
-    chartState,
-    chartRect:(function(){
-      try{const el=document.querySelector('#chart-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
-    })(),
-    chartContainerRect:(function(){
-      try{const el=document.querySelector('#chart-svg-container');return el?el.getBoundingClientRect():null;}catch(e){return null;}
-    })(),
-    paracRect:(function(){
-      try{const el=document.querySelector('#parac-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
-    })()
-  });
 const ds=externalDataset&&externalDataset.length?externalDataset:getMergedDataset();
 setDefaultMetric(ds);
 refreshBarSortOptions();
@@ -106,7 +121,6 @@ const dataset=ds;if(!dataset.length||!svgG)return;
 const numericHeaders=inferNumericHeaders(dataset);
 if(!_state.currentMetric||!numericHeaders.includes(_state.currentMetric))_state.currentMetric=(numericHeaders.includes('RNG')?'RNG':(numericHeaders[0]||null));
 if(!_state.currentMetric){svgG.selectAll('*').remove();return;}
-console.log("BAR data",{len:dataset.length,numericHeaders,currentMetric:_state.currentMetric});
 const base=dataset.map(function(row,idx){return{p_label:getPLabel?getPLabel(row,idx):pLabelForIndex(idx),case_name:(function(){for(const k in row)if(/^Participant\b/i.test(k))return String(row[k]??idx);return String(idx);})(),value:Number(row[_state.currentMetric]),_row:row,_idx:idx};}).filter(d=>Number.isFinite(d.value));
 
 const colorDetailForRow=function(idx){

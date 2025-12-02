@@ -10,6 +10,8 @@ html,body{
   color:var(--color-text);
   font-family:var(--font-body);
   overflow-x: hidden;
+  /* Keep a consistent layout width when panels change height by always reserving the scrollbar */
+  overflow-y: scroll;
 }
 
 /* generic horizontal group */
@@ -245,5 +247,4 @@ html,body{
   min-height: 0;
   padding-bottom: 0;
 }
-
 

@@ -1545,8 +1545,8 @@ function broadcastDataUpdated(what){
   $(document).on("click", "#vis-switch-btn", function () {
     window.CHART_STATE.visType = (window.CHART_STATE.visType === "bar_chart") ? "parallel_coordinate" : "bar_chart";
     applyVisType();
-    // Re-render after switching to BAR so the SVG uses the visible container size
-    if (window.CHART_STATE.visType === "bar_chart" && typeof window.renderChartsView === "function") {
+    // Re-render in the now-visible mode so layout uses the correct container size
+    if (typeof window.renderChartsView === "function") {
       window.renderChartsView();
     }
   });
