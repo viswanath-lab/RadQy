@@ -82,6 +82,16 @@ function catIdxForValue(v,domain){const i=domain.indexOf(v);return Math.max(0,i)
 Bar._inferNumeric=inferNumericHeaders;Bar._inferCategorical=inferCategoricalHeaders;
 
 Bar.render=function(svgG,width,height,margin,externalDataset,metric,chartState,getPLabel,onSelect){
+console.log("BAR render start",{
+  container:{width,height,margin},
+  chartState,
+  chartRect:(function(){
+    try{const el=document.querySelector('#chart-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
+  })(),
+  paracRect:(function(){
+    try{const el=document.querySelector('#parac-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
+  })()
+});
 const ds=externalDataset&&externalDataset.length?externalDataset:getMergedDataset();
 setDefaultMetric(ds);
 refreshBarSortOptions();
