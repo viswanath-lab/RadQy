@@ -1471,15 +1471,19 @@ function broadcastDataUpdated(what){
 
     var numericNow = inferNumericColumns(dataset);
 
+    var defaultMetric = (window.CHART_STATE && window.CHART_STATE.measureBy && numericNow.indexOf(window.CHART_STATE.measureBy) !== -1)
+      ? window.CHART_STATE.measureBy
+      : (numericNow[0] || null);
+
     if (!window.CHART_STATE.initialized) {
       window.CHART_STATE.paracMetrics = numericNow.slice();
-      window.CHART_STATE.currentMetric = numericNow[0] || null;
+      window.CHART_STATE.currentMetric = defaultMetric;
       window.CHART_STATE.visType = 'parallel_coordinate';
       window.CHART_STATE.initialized = true;
     } else {
       window.CHART_STATE.paracMetrics = numericNow.slice();
       if (numericNow.indexOf(window.CHART_STATE.currentMetric) === -1) {
-        window.CHART_STATE.currentMetric = numericNow[0] || null;
+        window.CHART_STATE.currentMetric = defaultMetric;
       }
     }
 

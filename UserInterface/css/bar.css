@@ -63,6 +63,22 @@
   gap:10px;
 }
 
+#bar-metric-wrap,
+#bar-sort-wrap{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Align labels vertically with buttons */
+#bar-controls-dock .ctl-label{
+  display: flex;
+  align-items: center;
+  height: var(--btn-h-sm);
+  line-height: var(--btn-h-sm);
+  margin: 0 6px 0 0;
+}
+
 /* Ensure bar pane spans full width/height for rendering */
 .chart-pane {
   width: 100%;
@@ -90,14 +106,101 @@
   padding: 0 10px;
 }
 #bar-sort-order{
-  min-width: 32px;
+  min-width: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-emory-blue);
+  padding: 0 1px;
+  border: 1px solid var(--color-emory-blue);
+  border-radius: 4px;
+  background: #fff;
+  height: var(--btn-h-sm);
+}
+#bar-sort-order .sort-glyph{
+  width: 10px;
+  height: 18px;
+  display: block;
 }
 
 .radqy-select__btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: var(--btn-h-sm);
   min-width: 56px;
   font-size: 10px;
   padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-emory-blue);
+  position: relative;
+  background: #fff;
+  color: #111;
+  line-height: var(--btn-h-sm);
+}
+
+/* Add a small caret like Color By */
+#bar-controls-dock .radqy-select__btn::after{
+  content:'';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--color-emory-blue);
+  margin-left: 6px;
+  display: inline-block;
+  pointer-events: none;
+}
+
+/* Match Color By styling for typed buttons */
+.radqy-select__btn.radqy-opt--tag   { background: var(--color-tag);  border-color: var(--color-emory-blue);  color: #000; }
+.radqy-select__btn.radqy-opt--iqms  { background: var(--color-iqm);  border-color: var(--color-emory-blue);  color: #000; }
+.radqy-select__btn.radqy-opt--ext   { background: var(--color-ext);  border-color: var(--color-emory-blue);  color: #000; }
+.radqy-select__btn.radqy-opt--aux   { background: var(--color-aux);  border-color: var(--color-emory-blue);  color: #000; }
+.radqy-select__btn.radqy-opt--cat   { background: var(--color-ext);   border-color: var(--color-emory-blue);   color: #000; }
+.radqy-select__btn.radqy-opt--part  { background: var(--color-psharp,#fff); border-color: var(--color-emory-blue); color: #000; }
+.radqy-select__btn.radqy-opt--num   { background: #fff; border-color: var(--color-emory-blue); color: var(--color-text); }
+.radqy-select__btn.radqy-opt--other { background: #fff; border-color: var(--color-emory-blue); color: var(--color-text); }
+
+/* Menu item base (match Color By sizing) */
+#bar-controls-dock .radqy-select__opt{
+  font-size: 10px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+/* Base fill stays white; type color only on hover */
+.radqy-select__opt.radqy-opt--tag,
+.radqy-select__opt.radqy-opt--iqms,
+.radqy-select__opt.radqy-opt--ext,
+.radqy-select__opt.radqy-opt--aux,
+.radqy-select__opt.radqy-opt--cat,
+.radqy-select__opt.radqy-opt--part,
+.radqy-select__opt.radqy-opt--num,
+.radqy-select__opt.radqy-opt--other {
+  background: #fff;
+  color: var(--color-text);
+}
+
+/* Menu items mimic Color By hover cues (explicitly scoped to bar controls) */
+#bar-controls-dock .radqy-select__opt.radqy-opt--tag:hover  { background: var(--color-tag) !important;  color:#000 !important; }
+#bar-controls-dock .radqy-select__opt.radqy-opt--iqms:hover { background: var(--color-iqm) !important;  color:#000 !important; }
+#bar-controls-dock .radqy-opt--ext:hover  { background: var(--color-ext) !important;  color:#000 !important; }
+#bar-controls-dock .radqy-select__opt.radqy-opt--aux:hover  { background: var(--color-aux) !important;  color:#000 !important; }
+#bar-controls-dock .radqy-select__opt.radqy-opt--cat:hover  { background: var(--color-ext) !important;  color:#000 !important; }
+#bar-controls-dock .radqy-select__opt.radqy-opt--part:hover { background: var(--color-psharp,#eef2ff) !important; color:#000 !important; }
+#bar-controls-dock .radqy-select__opt.radqy-opt--num:hover,
+#bar-controls-dock .radqy-select__opt.radqy-opt--other:hover { background: rgba(0,0,0,0.12) !important; color: var(--color-text); }
+
+/* Bar dropdown menu container matches Color By rounding and border */
+#bar-controls-dock .radqy-select__menu{
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  margin-top: 4px;
+  background: #fff;
+  min-width: 120px;
+  left: 0 !important;
 }
 
 .legend-section{

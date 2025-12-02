@@ -25,7 +25,7 @@ window.RADQY_CONFIG = {
   },
 
   // Chart defaults
-  chartDefaults: { sortBy: "RNG", measureBy: "RNG", colorBy: "P#" },
+  
 
   // UMAP defaults
   umapDefaults: {
