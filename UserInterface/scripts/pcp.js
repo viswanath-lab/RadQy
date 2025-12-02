@@ -117,6 +117,46 @@ function categoryColorScale() {
   return function(idx){ return palette[idx % palette.length]; };
 }
 
+function catColorFromIndex(idx){
+  var css = getComputedStyle(document.documentElement);
+  var colors = [
+    null,
+    css.getPropertyValue("--color-base-cat1") || "#c7d8ff",
+    css.getPropertyValue("--color-base-cat2") || "#f6b7ce",
+    css.getPropertyValue("--color-base-cat3") || "#90ffe0",
+    css.getPropertyValue("--color-base-cat4") || "#ffddb3",
+    css.getPropertyValue("--color-base-cat5") || "#e2caff",
+    css.getPropertyValue("--color-base-cat6") || "#c2f2f0"
+  ];
+  return colors[idx] || colors[1] || "#ddd";
+}
+function catHoverColorFromIndex(idx){
+  var css = getComputedStyle(document.documentElement);
+  var colors = [
+    null,
+    css.getPropertyValue("--color-hover-cat1") || "#3b6ed9",
+    css.getPropertyValue("--color-hover-cat2") || "#e85c92",
+    css.getPropertyValue("--color-hover-cat3") || "#2f8a70",
+    css.getPropertyValue("--color-hover-cat4") || "#e98a2b",
+    css.getPropertyValue("--color-hover-cat5") || "#8e63e6",
+    css.getPropertyValue("--color-hover-cat6") || "#2a6b6b"
+  ];
+  return colors[idx] || colors[1] || "#999";
+}
+function catSelectColorFromIndex(idx){
+  var css = getComputedStyle(document.documentElement);
+  var colors = [
+    null,
+    css.getPropertyValue("--color-select-cat1") || "#0b2a63",
+    css.getPropertyValue("--color-select-cat2") || "#b71575",
+    css.getPropertyValue("--color-select-cat3") || "#0f4538",
+    css.getPropertyValue("--color-select-cat4") || "#8c3f00",
+    css.getPropertyValue("--color-select-cat5") || "#3f197e",
+    css.getPropertyValue("--color-select-cat6") || "#0f2f34"
+  ];
+  return colors[idx] || colors[1] || "#555";
+}
+
 function hoverTableRow(caseName, on) {
   if (!window.dt) return;
   var participantIdx = (window.CURRENT_HEADERS && window.CURRENT_HEADERS.findIndex)
@@ -394,10 +434,24 @@ function ensureChartToggleButton() {
     return String(idx);
   }
 
+  function buildParticipantDomainFromLabels(labels) {
+    if (!Array.isArray(labels)) return [];
+    var out = [];
+    var seen = new Set();
+    labels.forEach(function(l){
+      var s = String(l);
+      if (seen.has(s)) return;
+      seen.add(s);
+      out.push(s);
+    });
+    return out;
+  }
+
   function inferNumericColumns(dataset) {
     if (!dataset.length) return [];
     var allHeaders = Array.isArray(window.CURRENT_HEADERS) ? window.CURRENT_HEADERS.slice() : Object.keys(dataset[0]);
-    var hidden = (window.VIEW_STATE && window.VIEW_STATE.hiddenHeaders) ? window.VIEW_STATE.hiddenHeaders : new Set();
+    var hiddenRaw = (window.VIEW_STATE && window.VIEW_STATE.hiddenHeaders) ? window.VIEW_STATE.hiddenHeaders : new Set();
+    var hidden = new Set(Array.from(hiddenRaw).map(function(h){ return String(h).toLowerCase(); }));
 
     var numericCols = [];
     for (var i=0;i<allHeaders.length;i++){
@@ -405,7 +459,8 @@ function ensureChartToggleButton() {
       if (!h) continue;
       if (/^Participant\b/i.test(h)) continue;
       if (String(h).trim() === 'P#') continue;
-      if (hidden && typeof hidden.has === 'function' && hidden.has(h)) continue;
+      var hLow = String(h).toLowerCase();
+      if (hidden.has(hLow)) continue;
 
       var sawAny = false, allNumeric = true;
       for (var r = 0; r < dataset.length; r++) {
@@ -420,14 +475,14 @@ function ensureChartToggleButton() {
     return numericCols;
   }
 
-  window.radqyMergedDataset = mergedDataset;
-  window.radqyInferNumericColumns = inferNumericColumns;
+window.radqyMergedDataset = mergedDataset;
+window.radqyInferNumericColumns = inferNumericColumns;
 
-  function broadcastDataUpdated(what){
-    var ev = document.createEvent('CustomEvent');
-    ev.initCustomEvent('radqy:data:updated', true, true, { what: what || '' });
-    window.dispatchEvent(ev);
-  }
+function broadcastDataUpdated(what){
+  var ev = document.createEvent('CustomEvent');
+  ev.initCustomEvent('radqy:data:updated', true, true, { what: what || '' });
+  window.dispatchEvent(ev);
+}
 
   function selectRowInTable(caseNameOrNull) {
     if (!window.dt) {
@@ -487,18 +542,34 @@ function ensureChartToggleButton() {
   }
 
   function bringLineToFront(caseName){
-    if (!caseName) return;
-    var sel = d3.select('#parac-svg').selectAll('path.foreground-path[data-case="'+String(caseName)+'"]');
+    if (!caseName || !foregroundLayer) return;
+    var sel = foregroundLayer.selectAll('path.foreground-path[data-case="'+String(caseName)+'"]');
     if (!sel.empty()){
       var n = sel.node();
       n.parentNode.appendChild(n);
     }
   }
 
+  function findRowIndexByCaseName(caseName) {
+    if (!window.DATA || !Array.isArray(window.DATA.ROWS)) return -1;
+    var rows = window.DATA.ROWS;
+    var headers = window.DATA.HEADERS || [];
+    var pHeader = getParticipantHeaderName();
+    if (pHeader && headers.indexOf(pHeader) !== -1) {
+      for (var i = 0; i < rows.length; i++) {
+        var v = rows[i][pHeader];
+        if (String(v) === String(caseName)) return i;
+      }
+    }
+    var idx = Number(caseName);
+    if (Number.isFinite(idx) && idx >= 0 && idx < rows.length) return idx;
+    return -1;
+  }
+
   function bringLineToFrontDeferred(caseName, tries){
     tries = tries || 8;
     if (!caseName || tries <= 0) return;
-    var exists = !d3.select('#parac-svg').selectAll('path.foreground-path[data-case="'+String(caseName)+'"]').empty();
+    var exists = foregroundLayer && !foregroundLayer.selectAll('path.foreground-path[data-case="'+String(caseName)+'"]').empty();
     if (exists) {
       bringLineToFront(caseName);
     } else {
@@ -523,6 +594,24 @@ function ensureChartToggleButton() {
       } else {
         PARAC_SVG.selectAll('.pcp-part-tick[data-case="'+caseName+'"]').classed("pcp-hover-target-tick", true);
       }
+    }
+
+    // show zoomed P# label on hover
+    setTickLabelVisibility(caseName, on, currentSelectedIndexSet());
+  }
+
+  function emitHover(caseName, on, rowIndexOrIndices) {
+    var detail = { caseName: caseName, on: !!on };
+    if (Array.isArray(rowIndexOrIndices)) {
+      detail.indices = rowIndexOrIndices.slice();
+    } else if (Number.isFinite(rowIndexOrIndices)) {
+      detail.rowIndex = rowIndexOrIndices;
+    }
+    try {
+      document.dispatchEvent(new CustomEvent("radqy:hover:change", { detail: detail }));
+    } catch (e) {}
+    if (window.RADQY_EVENTS && typeof window.RADQY_EVENTS.emitHover === "function") {
+      window.RADQY_EVENTS.emitHover(detail);
     }
   }
 
@@ -549,25 +638,31 @@ function ensureChartToggleButton() {
     }
   };
 
-  function selectCaseAndRefresh(caseName) {
-    if (window.CHART_STATE.selectedCase === caseName) {
-      window.CHART_STATE.selectedCase = null;
-      selectRowInTable(null);
-      if (foregroundLayer) {
-        foregroundLayer.selectAll("path.foreground-path").classed("pcp-selected-line", false);
-      }
+  function selectCaseAndRefresh(caseName, rowIndex) {
+    var idx = Number.isFinite(rowIndex) ? rowIndex : findRowIndexByCaseName(caseName);
+    if (!Number.isFinite(idx) || idx < 0) return;
+
+    // Additive, persistent selection across all panels
+    var currentArr = (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function")
+      ? window.RADQY.getSelectedRowIndices().slice()
+      : (window.RADQY && Array.isArray(window.RADQY._selectedIndices) ? window.RADQY._selectedIndices.slice() : []);
+
+    var curSet = new Set(currentArr);
+    if (curSet.has(idx)) {
+      curSet.delete(idx); // toggle off if already selected
     } else {
-      window.CHART_STATE.selectedCase = caseName;
-      selectRowInTable(caseName);
-      if (foregroundLayer) {
-        foregroundLayer.selectAll("path.foreground-path").classed("pcp-selected-line", false);
-        foregroundLayer.select('path[data-case="' + caseName + '"]').classed("pcp-selected-line", true).style("opacity", null).style("stroke-width", null);
-        bringLineToFrontDeferred(caseName);
-      }
+      curSet.add(idx);    // add if not selected
     }
-    renderAll();
-    if (window.RadqyBarChart && typeof window.RadqyBarChart.selectFromTable === "function") {
-      window.RadqyBarChart.selectFromTable(caseName, !!caseName);
+    currentArr = Array.from(curSet);
+
+    if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function") {
+      window.RADQY.setSelectedRowIndices(currentArr);
+    }
+
+    bringLineToFront(caseName);
+    // keep most recent selection on top when multiple are selected
+    if (window.PARAC_SVG_GLOBAL) {
+      bringLineToFrontDeferred(caseName, 4);
     }
   }
   window.selectCaseAndRefresh = selectCaseAndRefresh;
@@ -607,8 +702,25 @@ function ensureChartToggleButton() {
     var yScale = {};
     var participantDim = useCategoryAxis ? '__CAT__' : 'P#';
 
+    function getPLabel(row, idx){
+      var pVal = null;
+      if (row && row["P#"] != null) pVal = row["P#"];
+      else if (row && row["p#"] != null) pVal = row["p#"];
+      if (pVal != null && String(pVal).trim() !== "") return String(pVal).trim();
+      return "P" + (idx + 1);
+    }
+
+    // P labels derived from data (fallback to sequential)
+    var pLabels = dataset.map(function(row, i){ return getPLabel(row, i); });
+
     var data = dataset.map(function (row, idx) {
-      var o = { case_name: getCaseName(row, idx), pLabel: "P" + (idx + 1) };
+      var o = { case_name: getCaseName(row, idx), pLabel: pLabels[idx], __rowIndex: idx };
+      // color-by category from table state
+      if (window.RADQY && typeof window.RADQY.getRowCategoryForIndex === "function") {
+        o.__catIdx = window.RADQY.getRowCategoryForIndex(idx) || 1;
+      } else {
+        o.__catIdx = 1;
+      }
       window.CHART_STATE.paracMetrics.forEach(function (m) { o[m] = Number(row[m]); });
       if (useCategoryAxis) {
         var raw = row[catHeader];
@@ -646,7 +758,7 @@ function ensureChartToggleButton() {
         }));
       yScale[participantDim] = yCatScale;
     } else {
-      var participantDomain = data.map(function(d){ return d.case_name; });
+      var participantDomain = buildParticipantDomainFromLabels(pLabels);
       var yPartScale = d3.scale.ordinal()
         .domain(participantDomain)
         .range(participantDomain.map(function(d, i){
@@ -681,7 +793,7 @@ function ensureChartToggleButton() {
     function path(d) {
       return line(dimensions.map(function (p) {
         if (p === participantDim) {
-          return [ xScale(p), useCategoryAxis ? yScale[p](d.__cat__) : yScale[p](d.case_name) ];
+          return [ xScale(p), useCategoryAxis ? yScale[p](d.__cat__) : yScale[p](d.pLabel) ];
         } else {
           return [ xScale(p), yScale[p](d[p]) ];
         }
@@ -695,31 +807,37 @@ function ensureChartToggleButton() {
 
     foregroundLayer = PARAC_SVG.append("g").attr("class", "foreground");
 
-    var domainCats = useCategoryAxis ? (catDomain.length ? catDomain.slice() : Array.from(new Set(data.map(function(d){ return d.__cat__; })))) : [];
+      var domainCats = useCategoryAxis ? (catDomain.length ? catDomain.slice() : Array.from(new Set(data.map(function(d){ return d.__cat__; })))) : [];
+
+    var selIdxSet = (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function")
+      ? new Set(window.RADQY.getSelectedRowIndices())
+      : new Set();
 
     var foreground = foregroundLayer.selectAll("path")
       .data(data)
       .enter().append("path")
       .attr("class", function (d) {
         var base = "foreground-path";
-        if (!useCategoryAxis) return base + (window.CHART_STATE.selectedCase === d.case_name ? " pcp-selected-line" : "");
-        var idx = Math.max(0, domainCats.indexOf(d.__cat__));
-        return base + " cat-" + idx + (window.CHART_STATE.selectedCase === d.case_name ? " pcp-selected-line" : "");
+        return base + (selIdxSet.has(d.__rowIndex) ? " pcp-selected-line" : "");
       })
       .attr("data-case", function(d){ return d.case_name; })
+      .attr("data-row-index", function(d){ return d.__rowIndex; })
+      .attr("data-cat-idx", function(d){ return d.__catIdx || 1; })
       .attr("data-cat",  function(d){ return useCategoryAxis ? d.__cat__ : ""; })
       .attr("d", path)
       .on("mouseover", function(d){
         bringLineToFront(d.case_name);
         highlightCase(d.case_name, true, useCategoryAxis ? d.__cat__ : null);
         hoverTableRow(d.case_name, true);
+        emitHover(d.case_name, true, d.__rowIndex);
       })
       .on("mouseout", function(d){
         highlightCase(d.case_name, false, useCategoryAxis ? d.__cat__ : null);
         hoverTableRow(d.case_name, false);
+        emitHover(d.case_name, false, d.__rowIndex);
       })
       .on("click", function(d){
-        selectCaseAndRefresh(d.case_name);
+        selectCaseAndRefresh(d.case_name, d.__rowIndex);
       });
 
     (function publishRowCategoryMapping(){
@@ -746,20 +864,6 @@ function ensureChartToggleButton() {
         foregroundLayer.node().appendChild(sel.node());
       }
     };
-
-    if (window.CHART_STATE.selectedCase) {
-      bringLineToFrontDeferred(window.CHART_STATE.selectedCase);
-      foregroundLayer.selectAll("path.foreground-path").classed("pcp-selected-line", function() {
-        return d3.select(this).attr("data-case") === window.CHART_STATE.selectedCase;
-      });
-      if (window.CHART_STATE.dimOthersOnSelect) {
-        foregroundLayer.selectAll("path.foreground-path").filter(function() {
-          return d3.select(this).attr("data-case") !== window.CHART_STATE.selectedCase;
-        }).style("opacity", 0.08).style("stroke-width", "1px");
-      } else {
-        foregroundLayer.selectAll("path.foreground-path").style("opacity", null).style("stroke-width", null);
-      }
-    }
 
     var g = PARAC_SVG.selectAll(".dimension")
       .data(dimensions)
@@ -1002,13 +1106,14 @@ function ensureChartToggleButton() {
     }
 
   function renderParticipantAxis(dimGroup, dataArr, partScale) {
-      var N = dataArr.length;
-      var firstCase = dataArr[0];
-      var lastCase  = dataArr[N - 1];
+      var domain = partScale.domain ? partScale.domain() : [];
+      var N = domain.length;
+      var firstCase = domain[0];
+      var lastCase  = domain[N - 1];
       var yPosByCase = {};
-      dataArr.forEach(function(d){ yPosByCase[d.case_name] = partScale(d.case_name); });
-      var yBottom = yPosByCase[firstCase.case_name];
-      var yTop    = yPosByCase[lastCase.case_name];
+      domain.forEach(function(name){ yPosByCase[name] = partScale(name); });
+      var yBottom = yPosByCase[firstCase];
+      var yTop    = yPosByCase[lastCase];
 
       dimGroup.append("line")
         .attr("class", "pcp-part-axis-line")
@@ -1016,7 +1121,7 @@ function ensureChartToggleButton() {
         .attr("y1", yTop).attr("y2", yBottom)
         .style("stroke-width", "4px");
 
-      var tickData = [{ y: yBottom }, { y: yTop }];
+      var tickData = [{ y: yBottom, name: firstCase }, { y: yTop, name: lastCase }];
       dimGroup.append("g")
         .attr("class", "axis")
         .selectAll("line.pcp-tick-line")
@@ -1028,33 +1133,46 @@ function ensureChartToggleButton() {
         .attr("y2", function(d){ return d.y; });
 
       var ticks = dimGroup.selectAll(".pcp-part-tick")
-        .data(dataArr)
-        .enter()
-        .append("g")
-        .attr("class", function(d){
-          return (window.CHART_STATE.selectedCase === d.case_name) ? "pcp-part-tick pcp-selected-tick" : "pcp-part-tick";
+      .data(dataArr)
+      .enter()
+      .append("g")
+      .attr("class", function(d){
+          var selIdx = (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function")
+            ? new Set(window.RADQY.getSelectedRowIndices())
+            : new Set();
+          return selIdx.has(d.__rowIndex) ? "pcp-part-tick pcp-selected-tick" : "pcp-part-tick";
         })
         .attr("data-case", function(d){ return d.case_name; })
-        .attr("transform", function(d){ return "translate(0," + yPosByCase[d.case_name] + ")"; })
+        .attr("data-row-index", function(d){ return d.__rowIndex; })
+        .attr("transform", function(d){ return "translate(0," + yPosByCase[d.pLabel] + ")"; })
         .style("cursor", "pointer")
         .on("mouseover", function(d){
           bringLineToFront(d.case_name);
           highlightCase(d.case_name, true);
           hoverTableRow(d.case_name, true);
+          emitHover(d.case_name, true, d.__rowIndex);
         })
         .on("mouseout", function(d){
           highlightCase(d.case_name, false);
           hoverTableRow(d.case_name, false);
+          emitHover(d.case_name, false, d.__rowIndex);
         })
         .on("click", function(d){
-          selectCaseAndRefresh(d.case_name);
+          selectCaseAndRefresh(d.case_name, d.__rowIndex);
         });
 
       ticks.append("line")
-        .attr("class", "pcp-part-tick-line")
-        .attr("x1", 0).attr("x2", 10)
-        .attr("y1", 0).attr("y2", 0)
-        .style("stroke-width", "1px");
+      .attr("class", "pcp-part-tick-line")
+      .attr("x1", 0).attr("x2", 10)
+      .attr("y1", 0).attr("y2", 0)
+      .style("stroke-width", "1px");
+
+      ticks.append("text")
+        .attr("class", "pcp-part-p-label")
+        .attr("x", 12)
+        .attr("y", 4)
+        .text(function(d){ return d.pLabel || ("P" + (d.__rowIndex + 1)); })
+        .style("opacity", 0);
 
       ticks.filter(function(d,i){ return i === 0 || i === N-1; })
         .append("text")
@@ -1067,7 +1185,7 @@ function ensureChartToggleButton() {
         .attr("x", 2)
         .attr("y", function(d,i){ return (i === 0) ? 3 : -4; })
         .attr("dx", 0)
-        .text(function(d,i){ return "P" + (i+1); });
+        .text(function(d){ return d.pLabel || ("P" + (d.__rowIndex + 1)); });
 
       dimGroup.append("text")
         .attr("class", "pcp-axis-title")
@@ -1092,9 +1210,29 @@ function ensureChartToggleButton() {
       return Math.max(60, Math.min(320, (sh.right - screenPt.x - 6)));
     }
 
-  function renderCategoryAxis(dimGroup, dataArr, catScale, h, domain, colorFn) {
+    function renderCategoryAxis(dimGroup, dataArr, catScale, h, domain, colorFn) {
       var yByCat = {};
       domain.forEach(function(c){ yByCat[c] = catScale(c); });
+
+      function normCat(v){
+        if (typeof window.normalizeCategoryValue === "function") {
+          return window.normalizeCategoryValue("", v);
+        }
+        if (v == null) return "NA";
+        var t = String(v).trim();
+        return t === "" ? "NA" : t;
+      }
+
+      function catIdxForValue(v){
+        var map = window.VIEW_STATE && window.VIEW_STATE.colorByMap;
+        var norm = normCat(v);
+        if (map && typeof map.get === "function") {
+          var m = map.get(norm);
+          if (Number.isFinite(m)) return m;
+        }
+        var idx = domain.indexOf(v);
+        return idx >= 0 ? ((idx % 5) + 2) : 1;
+      }
 
       dimGroup.append("line")
         .attr("class", "pcp-part-axis-line")
@@ -1112,32 +1250,166 @@ function ensureChartToggleButton() {
 
       ticks.append("line")
         .attr("class", "pcp-part-tick-line")
-        .attr("x1", 0).attr("x2", 10)
+        .attr("x1", 0).attr("x2", 5)
         .attr("y1", 0).attr("y2", 0)
-        .style("stroke-width", "2px");
+        .style("stroke-width", "1px");
 
+      // add category badges with background color
+      ticks.append("rect")
+        .attr("class", "pcp-cat-badge")
+        .attr("x", 7)
+        .attr("y", -8)
+        .attr("rx", 3).attr("ry", 3)
+        .attr("height", 14)
+        .attr("width", function(d){
+          var text = d || "";
+          return Math.max(24, 4 + text.length * 5); // width based on text length
+        })
+        .attr("data-width", function(d){
+          var text = d || "";
+          return Math.max(24, 4 + text.length * 5);
+        })
+        .style("fill", function(d){
+          var idx = catIdxForValue(d);
+          return catColorFromIndex(idx);
+        })
+        .attr("data-color-idx", function(d){ return catIdxForValue(d); });
+      latestCategoryTicks = ticks;
+      updateCategoryBadgeSelection();
+
+      // text on top of badge
       ticks.append("text")
         .attr("class", "pcp-part-tick-label pcp-end-label")
         .attr("text-anchor", "start")
-        .attr("x", 14)
-        .attr("y", 3)
+        .attr("x", 10)
+        .attr("y", 2)
         .text(function(d){ return d; });
 
       ticks.select("text").style("pointer-events", "none");
 
+      // adjust widths to fit available space
+      (function fitBadges(){
+        var roomPx = rightRoomPxForAxis(dimGroup, 12);
+        ticks.each(function(){
+          var tick = d3.select(this);
+          var badge = tick.select(".pcp-cat-badge");
+          var textEl = tick.select("text");
+          var desired = Number(badge.attr("data-width")) || 32;
+          var maxW = Math.max(24, roomPx - 6);
+          var finalW = Math.min(desired, maxW);
+          badge.attr("width", finalW);
+          // shrink text if necessary
+          textEl
+            .attr("textLength", null)
+            .attr("lengthAdjust", null);
+          var pad = 10;
+          if (desired > finalW) {
+            var textRoom = Math.max(8, finalW - pad);
+            textEl
+              .attr("textLength", textRoom)
+              .attr("lengthAdjust", "spacingAndGlyphs");
+          }
+        });
+      })();
+
       ticks.on("mouseover", function(cat){
-          PARAC_SVG.selectAll('.foreground path[data-cat="'+cat+'"]').classed("pcp-hover-target-line", true);
+          // badge hover color
+          d3.select(this).select(".pcp-cat-badge").each(function(){
+            var idx = Number(d3.select(this).attr("data-color-idx") || 1);
+            d3.select(this).style("fill", catHoverColorFromIndex(idx));
+          });
+          // highlight matching lines
+          var rows = window.DATA && Array.isArray(window.DATA.ROWS) ? window.DATA.ROWS : [];
+          var idxs = [];
+          for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var val = row ? row[window.VIEW_STATE && window.VIEW_STATE.colorBy] : null;
+            if (normCat(val) === normCat(cat)) idxs.push(i);
+          }
+          var idxSetHover = new Set(idxs);
+          PARAC_SVG.selectAll('.foreground path')
+            .each(function(){
+              var sel = d3.select(this);
+              var idx = Number(sel.attr("data-row-index"));
+              if (idxSetHover.has(idx)) {
+                sel.classed("pcp-hover-target-line", true);
+                var catIdx = Number(sel.attr("data-cat-idx") || 1);
+                sel
+                  .style("stroke", catHoverColorFromIndex(catIdx))
+                  .style("stroke-width", "3px")
+                  .style("opacity", 1);
+                bringLineToFront(sel.attr("data-case"));
+              } else {
+                sel.classed("pcp-hover-target-line", false);
+              }
+            });
           d3.select(this).classed("pcp-hover-target-tick", true);
           window.zl(this, true, 1.6);
+
+          if (typeof window.hoverTableRow === "function") {
+            idxs.forEach(function(i){
+              var name = caseNameForIndex(i);
+              hoverTableRow(name, true);
+            });
+          }
+          emitHover(cat, true, idxs);
         })
         .on("mouseout", function(){
-          PARAC_SVG.selectAll('.foreground path').classed("pcp-hover-target-line", false);
+          // reset badge color
+          d3.select(this).select(".pcp-cat-badge").each(function(){
+            var idx = Number(d3.select(this).attr("data-color-idx") || 1);
+            d3.select(this).style("fill", catColorFromIndex(idx));
+          });
+          PARAC_SVG.selectAll('.foreground path')
+            .classed("pcp-hover-target-line", false)
+            .style("stroke", null)
+            .style("stroke-width", null)
+            .style("opacity", null);
           d3.select(this).classed("pcp-hover-target-tick", false);
           window.zl(this, false);
+          if (typeof window.hoverTableRow === "function") {
+            window.hoverTableRow(null, false);
+          }
+          emitHover(null, false, []);
+          updateCategoryBadgeSelection();
         })
         .on("click", function(cat){
-          foregroundLayer.selectAll("path.foreground-path")
-            .style("display", function(d){ return d.__cat__ === cat ? null : "none"; });
+          // select all rows belonging to this category
+          if (typeof window.RADQY === "object" && typeof window.RADQY.getSelectedRowIndices === "function") {
+            var rows = window.DATA && Array.isArray(window.DATA.ROWS) ? window.DATA.ROWS : [];
+            var idxs = [];
+            for (var i = 0; i < rows.length; i++) {
+              var row = rows[i];
+              var val = row ? row[window.VIEW_STATE && window.VIEW_STATE.colorBy] : null;
+              if (normCat(val) === normCat(cat)) idxs.push(i);
+            }
+            if (idxs.length && typeof window.RADQY.setSelectedRowIndices === "function") {
+              var current = (typeof window.RADQY.getSelectedRowIndices === "function")
+                ? window.RADQY.getSelectedRowIndices()
+                : [];
+              var curSet = new Set(current);
+              var allIn = idxs.every(function(i){ return curSet.has(i); });
+              var next = [];
+              if (allIn) {
+                // deselect this class
+                current.forEach(function(i){ if (!idxs.includes(i)) next.push(i); });
+                // reset badge color to base
+                d3.select(this).select(".pcp-cat-badge").each(function(){
+                  var idx = Number(d3.select(this).attr("data-color-idx") || 1);
+                  d3.select(this).style("fill", catColorFromIndex(idx));
+                });
+              } else {
+                // add this class
+                next = Array.from(new Set(current.concat(idxs)));
+                // set badge to selected color
+                d3.select(this).select(".pcp-cat-badge").each(function(){
+                  var idx = Number(d3.select(this).attr("data-color-idx") || 1);
+                  d3.select(this).style("fill", catSelectColorFromIndex(idx));
+                });
+              }
+              window.RADQY.setSelectedRowIndices(next);
+            }
+          }
         });
 
       (function fitToRightEdge(){
@@ -1177,15 +1449,23 @@ function ensureChartToggleButton() {
   }
 
   function renderAll() {
-    var dataset = mergedDataset();
-    if (!dataset.length || !_headers().length) return;
+    var dataset = (window.DATA && Array.isArray(window.DATA.ROWS))
+      ? window.DATA.ROWS
+      : mergedDataset();
+    if (!dataset.length || !_headers().length) {
+      // empty dataset: clear PCP contents but keep containers
+      d3.select("#chart-svg-container").selectAll("*").remove();
+      d3.select("#parac-svg-container").selectAll("*").remove();
+      return;
+    }
 
     if (!window.CURRENT_HEADERS || !window.CURRENT_HEADERS.length) {
       window.CURRENT_HEADERS = _headers();
     }
 
-    CHART_MARGIN  = { top: 10, right: 60, bottom: 100, left: 0 };
-    PARAC_MARGIN  = { top: 60, right: 10, bottom: 100, left: 10 };
+    // Match margins for PCP and BAR to keep panel width stable and leave room for labels
+    CHART_MARGIN  = { top: 10, right: 120, bottom: 100, left: 0 };
+    PARAC_MARGIN  = { top: 60, right: 120, bottom: 100, left: 10 };
 
     if (!$CHART().height()) $CHART().css('height', '260px');
     if (!$PARAC().height()) $PARAC().css('height', '260px');
@@ -1244,6 +1524,10 @@ function ensureChartToggleButton() {
     applyVisType();
 
     if (window.CHART_STATE.selectedCase) bringLineToFrontDeferred(window.CHART_STATE.selectedCase);
+    // Ensure selected lines remain on top after render
+    requestAnimationFrame(function(){
+      applyPCPSelectionHighlight(currentSelectedIndexSet());
+    });
   }
 
   function applyVisType() {
@@ -1271,6 +1555,123 @@ function ensureChartToggleButton() {
     populateMetricOptions();
   });
 
+  // ---------- Selection highlight helper (index-based) ----------
+  function currentSelectedIndexSet() {
+    const idxs = (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function")
+      ? window.RADQY.getSelectedRowIndices()
+      : [];
+    return new Set(
+      (idxs || []).filter(v => Number.isFinite(v)).map(v => v)
+    );
+  }
+
+  function caseNameForIndex(idx){
+    var rows = (window.DATA && window.DATA.ROWS) || [];
+    var headers = (window.DATA && window.DATA.HEADERS) || [];
+    var pHeader = getParticipantHeaderName();
+    var row = rows[idx];
+    if (!row) return String(idx);
+    if (pHeader && row[pHeader] != null && String(row[pHeader]).trim() !== "") return String(row[pHeader]);
+    return "P" + (idx + 1);
+  }
+
+  function reorderPCPLines(orderArr){
+    if (!foregroundLayer || !Array.isArray(orderArr)) return;
+    orderArr.forEach(function(idx){
+      var caseName = caseNameForIndex(idx);
+      if (caseName) bringLineToFront(caseName);
+    });
+  }
+
+  function setTickLabelVisibility(hoverCase, onHover, selSet) {
+    selSet = selSet || currentSelectedIndexSet();
+    if (!window.PARAC_SVG_GLOBAL) return;
+    var svg = window.PARAC_SVG_GLOBAL;
+    svg.selectAll(".pcp-part-p-label")
+      .each(function(){
+        var parent = d3.select(this.parentNode);
+        var caseName = parent.attr("data-case");
+        var rowIdx = Number(parent.attr("data-row-index"));
+        var isSel = selSet.has(rowIdx);
+        var isHover = hoverCase && String(caseName) === String(hoverCase) && onHover;
+        var show = isSel || isHover;
+        d3.select(this)
+          .style("opacity", show ? 1 : 0)
+          .classed("is-hover", !!isHover)
+          .classed("is-selected", !!isSel);
+      });
+  }
+
+  var latestCategoryTicks = null;
+
+  function updateCategoryBadgeSelection() {
+    if (!latestCategoryTicks) return;
+    var colorBy = (window.VIEW_STATE && window.VIEW_STATE.colorBy) || null;
+    var rows = (window.DATA && Array.isArray(window.DATA.ROWS)) ? window.DATA.ROWS : [];
+    if (!rows || !rows.length) return;
+    var normFn = (typeof window.normalizeCategoryValue === "function")
+      ? window.normalizeCategoryValue
+      : function(_h, v){ if (v == null) return "NA"; var t=String(v).trim(); return t===""?"NA":t; };
+    var selSet = currentSelectedIndexSet();
+
+    latestCategoryTicks.each(function(){
+      var tick = d3.select(this);
+      var cat = tick.attr("data-cat");
+      var badge = tick.select(".pcp-cat-badge");
+      if (badge.empty()) return;
+      var idxAttr = badge.attr("data-color-idx");
+      var idx = Number(idxAttr);
+      if (!Number.isFinite(idx) || idx <= 0) idx = 1;
+      var baseColor = catColorFromIndex(idx);
+      var selColor  = catSelectColorFromIndex(idx);
+
+      if (!colorBy || colorBy === "P#") {
+        badge.style("fill", baseColor);
+        tick.classed("selected", false);
+        return;
+      }
+
+      var matching = [];
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var val = row ? row[colorBy] : null;
+        if (normFn(colorBy, val) === normFn(colorBy, cat)) matching.push(i);
+      }
+
+      var allSelected = matching.length && matching.every(function(i){ return selSet.has(i); });
+      badge.style("fill", allSelected ? selColor : baseColor);
+      tick.classed("selected", !!allSelected);
+    });
+  }
+
+  function applyPCPSelectionHighlight(idxSet) {
+    const set = (idxSet && idxSet.size) ? idxSet : currentSelectedIndexSet();
+    if (!window.PARAC_SVG_GLOBAL) return;
+    const svg = window.PARAC_SVG_GLOBAL;
+
+    svg.selectAll("path.foreground-path").classed("pcp-selected-line", function () {
+      const idx = Number(d3.select(this).attr("data-row-index"));
+      return set.has(idx);
+    });
+
+    svg.selectAll(".pcp-part-tick").classed("pcp-selected-tick", function () {
+      const idx = Number(d3.select(this).attr("data-row-index"));
+      return set.has(idx);
+    });
+
+    var last = window.RADQY_LAST_SELECTED;
+    if (!Number.isFinite(last) || !set.has(last)) {
+      last = set.size ? set.values().next().value : null;
+    }
+    if (Number.isFinite(last)) {
+      bringLineToFrontDeferred(caseNameForIndex(last));
+    }
+
+    // maintain render order for all selected lines (latest on top)
+    reorderPCPLines(Array.from(set));
+    setTickLabelVisibility(null, false, set);
+  }
+
   document.addEventListener('radqy:data:ready', function () {
     var upload = document.getElementById('upload-section');
     if (upload) upload.style.display = 'none';
@@ -1290,11 +1691,44 @@ function ensureChartToggleButton() {
     renderAll();
   });
 
-  window.addEventListener('radqy:data:updated', function () {
+  function handleDataUpdated(e){
+    // Recompute Color-by categories from current data so deleted classes disappear
+    var header = (window.VIEW_STATE && window.VIEW_STATE.colorBy) ? window.VIEW_STATE.colorBy : null;
+    if (header && header !== "P#" && window.DATA && Array.isArray(window.DATA.ROWS)) {
+      var normFn = (typeof window.normalizeCategoryValue === "function")
+        ? window.normalizeCategoryValue
+        : function(_h, v){ if (v == null) return "NA"; var t=String(v).trim(); return t===""?"NA":t; };
+      var seen = new Set();
+      var cats = [];
+      window.DATA.ROWS.forEach(function(r){
+        var v = r ? r[header] : null;
+        var n = normFn(header, v);
+        if (!seen.has(n)) { seen.add(n); cats.push(n); }
+      });
+      if (!window.CHART_STATE) window.CHART_STATE = {};
+      if (!window.VIEW_STATE) window.VIEW_STATE = {};
+      window.CHART_STATE.axisBy = {
+        kind: 'category',
+        column: header,
+        categories: cats.slice()
+      };
+      window.VIEW_STATE.colorByCats = cats.slice();
+    }
+
     populateAxisByOptions();
     populateMetricOptions();
     renderAll();
-  });
+    applyPCPSelectionHighlight(currentSelectedIndexSet());
+    var detail = e && e.detail;
+    if (detail && detail.what === "delete") {
+      // ensure no stale selection references removed rows
+      applyPCPSelectionHighlight(new Set());
+      window.RADQY_LAST_SELECTED = null;
+    }
+  }
+
+  window.addEventListener('radqy:data:updated', handleDataUpdated);
+  document.addEventListener('radqy:data:updated', handleDataUpdated);
 
   document.addEventListener("radqy:view:columns", function(e){
     if (e && e.detail && Array.isArray(e.detail.hidden)) {
@@ -1304,21 +1738,48 @@ function ensureChartToggleButton() {
     renderAll();
   });
 
-  document.addEventListener("radqy:selection-changed", function(e){
-    var indices = (e && e.detail && Array.isArray(e.detail.indices)) ? e.detail.indices : [];
-    if (indices.length && window.DATA && Array.isArray(window.DATA.ROWS)) {
-      var headers = window.DATA.HEADERS || [];
-      var pIdx = headers.findIndex(function(h){ return String(h).toLowerCase() === 'p#'; });
-      var caseName = indices[0];
-      if (pIdx >= 0) {
-        var row = window.DATA.ROWS[indices[0]];
-        if (row && row[headers[pIdx]] != null) caseName = row[headers[pIdx]];
-      }
-      window.CHART_STATE.selectedCase = caseName;
-    } else {
-      window.CHART_STATE.selectedCase = null;
-    }
+  // Re-render PCP when table order changes (e.g., sort) so row indices stay in sync
+  document.addEventListener("radqy:table:sorted", function(){
     renderAll();
+    applyPCPSelectionHighlight(currentSelectedIndexSet());
+  });
+
+  document.addEventListener("radqy:selection-changed", function(e){
+    var indices = (e && e.detail && (e.detail.indices || e.detail.selectedIndices)) ? (e.detail.indices || e.detail.selectedIndices) : [];
+    var idxSet = new Set((indices || []).filter(function(v){ return Number.isFinite(v); }).map(function(v){ return v; }));
+    applyPCPSelectionHighlight(idxSet);
+    updateCategoryBadgeSelection();
+
+    // direct class update to avoid losing highlights on re-render timing
+    if (window.PARAC_SVG_GLOBAL) {
+      var svg = window.PARAC_SVG_GLOBAL;
+      svg.selectAll("path.foreground-path").classed("pcp-selected-line", function () {
+        var idx = Number(d3.select(this).attr("data-row-index"));
+        return idxSet.has(idx);
+      });
+      svg.selectAll(".pcp-part-tick").classed("pcp-selected-tick", function () {
+        var idx = Number(d3.select(this).attr("data-row-index"));
+        return idxSet.has(idx);
+      });
+    }
+
+    // ensure ordering follows selection sequence
+    var orderArr = Array.isArray(indices) ? indices
+      : (Array.isArray(e && e.detail && e.detail.selectedIndices) ? e.detail.selectedIndices
+      : (window.RADQY && Array.isArray(window.RADQY._selectedIndices) ? window.RADQY._selectedIndices : []));
+    reorderPCPLines(orderArr);
+  });
+
+  // Hover sync from other panels
+  document.addEventListener("radqy:hover:change", function(e){
+    var det = e && e.detail ? e.detail : {};
+    var caseName = det.caseName != null ? String(det.caseName) : null;
+    var on = !!det.on;
+    if (!caseName) {
+      highlightCase("", false);
+      return;
+    }
+    highlightCase(caseName, on);
   });
 
   document.addEventListener("radqy:colorby:changed", function(e){
@@ -1334,6 +1795,7 @@ function ensureChartToggleButton() {
       window.CHART_STATE.axisBy = { kind:'participant', column:'P#', categories: [] };
     }
     renderAll();
+    applyPCPSelectionHighlight(currentSelectedIndexSet());
   });
 
   window.renderChartsView = renderAll;

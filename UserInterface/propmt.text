@@ -1,0 +1,65 @@
+Prompt for Codex / AI Agent:
+
+I am building an interactive front-end tool called RadQy. The system reads a single input file called results.tsv, which contains everything needed for the visualization and interaction across all panels. The file includes:
+
+metadata such as inputdir, outputdir, run time, dataset name, and settings,
+
+a table-like TSV data section where each row represents a participant or case,
+
+columns extracted from MRI/CT metadata tags,
+
+IQM (image quality metrics) values,
+
+auxiliary (AUX) columns like comments,
+
+external (EXT) data manually added via the frontend,
+
+The first two columns are very important:
+
+P# → participant number (P1, P2, P3, …)
+
+"Participant (topfolder--subfolder--patient ID)" → I call this PID
+
+These identify each participant across all linked visual components (Table, PCP, Bar, UMAP, Image, and Masks panels).
+
+One of the most important features of RadQy is visual synchronization and interaction between all panels.
+There is a dropdown button called Color By. It contains categorical column options (from tags, IQMs, AUX, or EXT).
+When a category (e.g., MFR) is selected from Color By, all participants are grouped by that metric.
+
+Example:
+If MFR has 3 classes → Philips, GE, and NA,
+Then all participants are assigned to one of these 3 categories.
+
+RadQy has exactly 5 color groups defined in tokens.css.
+Each color group has 3 levels:
+
+base (default color for the category)
+
+hover (temporary highlight when mouse is over)
+
+select (permanent active highlight when participant is selected)
+
+Color rules:
+
+When Color By = P#: all elements use the default base color.
+
+When Color By = MFR: all panels (Table rows, PCP lines, Bar chart bars, UMAP points, etc.) update their colors based on the 3 classes.
+
+Selection and hover behaviors update in real time across all components.
+
+When a participant is selected in one component (e.g., table), it becomes highlighted using the SELECT color in all components.
+
+Hovering on any component causes temporary highlighting using the HOVER color group.
+
+The Legend panel dynamically updates and shows total, selected, and unselected counts for each color class.
+
+I need your help coding features that respect:
+✔ Linked interaction between all panels
+✔ Color-by logic using token-based category colors
+✔ Real-time propagation of selection and hover states
+✔ Consistent color mapping for table, PCP, bar, UMAP, and image thumbnails
+✔ Updating of the dynamic legend based on current Color By selection
+
+Use this knowledge and do a huge update on all the things related. for know i dont have umap
+
+

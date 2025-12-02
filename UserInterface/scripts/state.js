@@ -45,6 +45,11 @@ window.RADQY.setSelectedRowIndices = function (idxs) {
   if (window.RADQY._vis?.table && typeof window.RADQY.refreshTableSelection === "function") {
     RADQY.refreshTableSelection();
   }
+
+  // Legacy event bus for listeners still on RADQY_EVENTS (indices only)
+  if (window.RADQY_EVENTS && typeof window.RADQY_EVENTS.emitSelection === "function") {
+    window.RADQY_EVENTS.emitSelection({ indices: idxs.slice() });
+  }
 };
 
 // Optional helper to fetch selected IDs

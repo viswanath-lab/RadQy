@@ -50,6 +50,18 @@
   max-height: calc(7 * 24px + 40px);
 }
 
+/* Pantone Red styling for Delete */
+#btndelete {
+  background: var(--color-pantone-red);
+  border-color: var(--color-pantone-red);
+  color: #fff;
+}
+#btndelete:hover:not(:disabled) {
+  background: var(--color-pantone-red-dark);
+  border-color: var(--color-pantone-red-dark);
+  color: #fff;
+}
+
 /* toolbar column on the right */
 .tabletools {
   flex: 0 0 90px;

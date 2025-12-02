@@ -4,26 +4,26 @@
 
 .bar { fill-opacity: 1; cursor: pointer; }
 
-.bar.cat-0 { fill: var(--cat2-base) !important; }
-.bar.cat-1 { fill: var(--cat3-base) !important; }
-.bar.cat-2 { fill: var(--cat4-base) !important; }
-.bar.cat-3 { fill: var(--cat5-base) !important; }
-.bar.cat-4 { fill: var(--cat6-base) !important; }
-.bar.cat-5 { fill: var(--cat1-base) !important; }
+.bar.cat1 { fill: var(--color-base-cat1) !important; }
+.bar.cat2 { fill: var(--color-base-cat2) !important; }
+.bar.cat3 { fill: var(--color-base-cat3) !important; }
+.bar.cat4 { fill: var(--color-base-cat4) !important; }
+.bar.cat5 { fill: var(--color-base-cat5) !important; }
+.bar.cat6 { fill: var(--color-base-cat6) !important; }
 
-.bar.cat-0.bar-hover-target { fill: var(--cat2-hover) !important; }
-.bar.cat-1.bar-hover-target { fill: var(--cat3-hover) !important; }
-.bar.cat-2.bar-hover-target { fill: var(--cat4-hover) !important; }
-.bar.cat-3.bar-hover-target { fill: var(--cat5-hover) !important; }
-.bar.cat-4.bar-hover-target { fill: var(--cat6-hover) !important; }
-.bar.cat-5.bar-hover-target { fill: var(--cat1-hover) !important; }
+.bar.cat1.bar-hover-target { fill: var(--color-hover-cat1) !important; }
+.bar.cat2.bar-hover-target { fill: var(--color-hover-cat2) !important; }
+.bar.cat3.bar-hover-target { fill: var(--color-hover-cat3) !important; }
+.bar.cat4.bar-hover-target { fill: var(--color-hover-cat4) !important; }
+.bar.cat5.bar-hover-target { fill: var(--color-hover-cat5) !important; }
+.bar.cat6.bar-hover-target { fill: var(--color-hover-cat6) !important; }
 
-.bar.cat-0.selected-bar { fill: var(--cat2-selected) !important; }
-.bar.cat-1.selected-bar { fill: var(--cat3-selected) !important; }
-.bar.cat-2.selected-bar { fill: var(--cat4-selected) !important; }
-.bar.cat-3.selected-bar { fill: var(--cat5-selected) !important; }
-.bar.cat-4.selected-bar { fill: var(--cat6-selected) !important; }
-.bar.cat-5.selected-bar { fill: var(--cat1-selected) !important; }
+.bar.cat1.selected-bar { fill: var(--color-select-cat1) !important; }
+.bar.cat2.selected-bar { fill: var(--color-select-cat2) !important; }
+.bar.cat3.selected-bar { fill: var(--color-select-cat3) !important; }
+.bar.cat4.selected-bar { fill: var(--color-select-cat4) !important; }
+.bar.cat5.selected-bar { fill: var(--color-select-cat5) !important; }
+.bar.cat6.selected-bar { fill: var(--color-select-cat6) !important; }
 
 /* unified legend */
 #unified-legend-row{
@@ -54,6 +54,33 @@
   box-shadow:0 1px 3px rgba(0,0,0,.1);
   font-size:.9rem;
   color:var(--color-gray);
+}
+
+.chart-top-row,
+#bar-controls-dock{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* Align measure/sort to Color By (btnsm sizing) */
+#bar-metric-select,
+#bar-sort-select,
+#bar-sort-order{
+  height: var(--btn-h-sm);
+  min-width: 56px;
+  font-size: 10px;
+  padding: 0 10px;
+}
+#bar-sort-order{
+  min-width: 32px;
+}
+
+.radqy-select__btn{
+  height: var(--btn-h-sm);
+  min-width: 56px;
+  font-size: 10px;
+  padding: 0 10px;
 }
 
 .legend-section{

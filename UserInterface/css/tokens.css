@@ -79,6 +79,10 @@
   /* AUX — Light Lilac Lavender */
   --color-aux: #f2e4ff;     /* calm, neutral violet-lavender */
 
+  /* Pantone Red 032C */
+  --color-pantone-red: #ef3340;
+  --color-pantone-red-dark: #c62a35;
+
 
   --color-black: #fffff;
   --color-psharp: #f3f4ff;

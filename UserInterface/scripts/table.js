@@ -3,6 +3,32 @@
   const $  = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 
+  function emitHover(caseName, on, rowIndex) {
+    const detail = { caseName, on: !!on };
+    if (Number.isFinite(rowIndex)) detail.rowIndex = rowIndex;
+
+    try {
+      document.dispatchEvent(new CustomEvent("radqy:hover:change", { detail }));
+    } catch (e) {}
+
+    if (window.RADQY_EVENTS && typeof window.RADQY_EVENTS.emitHover === "function") {
+      window.RADQY_EVENTS.emitHover(detail);
+    }
+  }
+
+  function getCaseNameForRow(rowIdx) {
+    const headers = TABLE_STATE.headers || [];
+    const rows = TABLE_STATE.rows || [];
+    const row = rows[rowIdx];
+    if (!row) return String(rowIdx);
+
+    const participantHeader = headers.find(h => /^Participant\b/i.test(String(h || "")));
+    if (participantHeader && row[participantHeader] != null) {
+      return String(row[participantHeader]);
+    }
+    return String(rowIdx);
+  }
+
   let TABLE_STATE = {
     headers: [],
     rows: [],
@@ -17,6 +43,11 @@
     header = header || null;
     categories = Array.isArray(categories) ? categories : [];
 
+    // default back to participants when header is cleared
+    if (!header || !categories.length) {
+      categories = ["Participants"];
+    }
+
     if (!window.VIEW_STATE) window.VIEW_STATE = {};
     window.VIEW_STATE.colorBy = header;
     window.VIEW_STATE.colorByCats = categories.slice();
@@ -26,10 +57,18 @@
     setRowCatsFrom(header, categories);
     renderTable(true); // preserve current selection and reapply cat styling
 
+    const map = window.VIEW_STATE.colorByMap || null;
+    const mapEntries = map ? Array.from(map.entries()) : null;
+
     // notify other modules (pcp/bar/legend/image) once
     document.dispatchEvent(new CustomEvent("radqy:colorby:changed", {
-      detail: { header, categories }
+      detail: { header, categories, catMap: mapEntries }
     }));
+
+    // Legacy bus
+    if (window.RADQY_EVENTS && typeof window.RADQY_EVENTS.emitColorBy === "function") {
+      window.RADQY_EVENTS.emitColorBy({ header, categories, catMap: mapEntries });
+    }
   };
 
   let TABLE_SORT = {
@@ -176,6 +215,16 @@
     );
   }
 
+  // Global color-by snapshot for other modules
+  function updateColorState(header, orderedCats, map) {
+    window.RADQY_COLOR = {
+      header: header || null,
+      categories: Array.isArray(orderedCats) ? orderedCats.slice() : [],
+      map: map ? new Map(map) : null,
+      defaultCat: 1
+    };
+  }
+
   function normalizeCatValue(v) {
     if (v == null) return "NA";
     const t = String(v).trim();
@@ -226,13 +275,23 @@
   // persist Color-by mapping so other panels (image, legends) can mirror colors
   function setColorByMap(header, orderedCats) {
     if (!window.VIEW_STATE) window.VIEW_STATE = {};
+    let map = null;
+
     if (header && Array.isArray(orderedCats) && orderedCats.length) {
-      window.VIEW_STATE.colorByMap = new Map(
+      map = new Map(
         orderedCats.map((v, i) => [normalizeCatValue(v), ((i % 5) + 2)])
       );
+      window.VIEW_STATE.colorByMap = map;
     } else {
       window.VIEW_STATE.colorByMap = null;
     }
+
+    const catsForState =
+      header && Array.isArray(orderedCats) && orderedCats.length
+        ? orderedCats
+        : ["Participants"];
+
+    updateColorState(header, catsForState, map);
   }
 
   // Directly set rowCats from a Color-by header + ordered categories
@@ -586,11 +645,52 @@
         toggleRowSelection(rowIdx);
       });
 
+      tr.addEventListener("mouseenter", () => {
+        const caseName = getCaseNameForRow(rowIdx);
+        emitHover(caseName, true, rowIdx);
+      });
+
+      tr.addEventListener("mouseleave", () => {
+        const caseName = getCaseNameForRow(rowIdx);
+        emitHover(caseName, false, rowIdx);
+      });
+
       tbody.appendChild(tr);
     });
 
     table.appendChild(tbody);
     return table;
+  }
+
+  function findScrollable(el) {
+    let node = el;
+    while (node) {
+      const style = window.getComputedStyle(node);
+      const oy = style.getPropertyValue("overflow-y");
+      if (oy === "auto" || oy === "scroll") return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function scrollRowIntoView(rowIdx) {
+    if (!Number.isFinite(rowIdx)) return;
+    const tbody = $("#tablehost tbody");
+    if (!tbody) return;
+
+    const tr = tbody.querySelector('tr[data-row-index="' + rowIdx + '"]');
+    if (!tr) return;
+
+    const container = findScrollable(tr) || tbody;
+    const trRect = tr.getBoundingClientRect();
+    const cRect  = container.getBoundingClientRect();
+
+    const above = trRect.top < cRect.top;
+    const below = trRect.bottom > cRect.bottom;
+
+    if (above || below) {
+      tr.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   }
 
   // preserveSelection = true → keep TABLE_STATE.selectedIds as is
@@ -659,6 +759,13 @@
         detail: { headers, rows }
       })
     );
+
+    // After render, if there is a selection, ensure the last selected row is visible
+    if (TABLE_STATE.selectedIds.size) {
+      const last = Array.from(TABLE_STATE.selectedIds).pop();
+      window.RADQY_LAST_SELECTED = last;
+      scrollRowIntoView(last);
+    }
   }
 
   // ---------- selection handling ----------
@@ -700,6 +807,9 @@
         row_index: idx,
         selected: TABLE_STATE.selectedIds.has(idx)
       });
+
+      // Auto-scroll selected row into view
+      scrollRowIntoView(idx);
 
       // 🔥 NEW: Notify header.js that selection changed
       document.dispatchEvent(new CustomEvent("radqy:selectionChanged", {
@@ -939,6 +1049,10 @@
       TABLE_STATE.rows    = keepRows;
       TABLE_STATE.rowCats = keepCats;
       TABLE_STATE.selectedIds.clear();
+      window.RADQY_LAST_SELECTED = null;
+      if (window.RADQY) {
+        window.RADQY._selectedIndices = [];
+      }
 
       // sync back to DATA (keep HEADERS intact)
       if (window.DATA) {
@@ -953,14 +1067,13 @@
       // Ensure legend/meta stay in sync with removed rows
       updateMetaCounts(TABLE_STATE.headers, TABLE_STATE.rows);
 
-      // 🔥 Tell all systems: no participants left
+      // 🔥 Reset selection everywhere after delete
       if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function") {
         window.RADQY.setSelectedRowIndices([]);
-      } else {
-        document.dispatchEvent(new CustomEvent("radqy:selection-changed", {
-          detail: { count: 0, indices: [] }
-        }));
       }
+      document.dispatchEvent(new CustomEvent("radqy:selection-changed", {
+        detail: { count: 0, indices: [] }
+      }));
 
       // Clear image panel immediately and hide it
       const imgHost = document.getElementById("imagehost") || document.getElementById("image-panel");
@@ -987,6 +1100,11 @@
       }
       document.dispatchEvent(new CustomEvent("radqy:masks-changed", {
         detail: { ...window.RADQY_MASK_VIS }
+      }));
+
+      // Notify other modules (PCP/Bar/Image) that the dataset changed (e.g., delete)
+      document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+        detail: { what: "delete" }
       }));
 
       logSafe("table_delete", { removed });
@@ -1023,6 +1141,11 @@
     if (!meta.auxs.includes(low)) meta.auxs.push(low);
 
     renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(TABLE_STATE.headers, TABLE_STATE.rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "add_column", name }
+    }));
   }
 
   function parseDelimited(text, delim) {
@@ -1194,8 +1317,13 @@
       if (!meta.exts.includes(low)) meta.exts.push(low);
     });
 
-    // 5) Final refresh
+    // 5) Final refresh + sync
     renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(TABLE_STATE.headers, TABLE_STATE.rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "add_column", names: newExtNames.slice() }
+    }));
   }
 
   // ===== COLUMN VISIBILITY used by metrics menu =====
@@ -1518,6 +1646,7 @@ function bindToolbar() {
 
     // default: all rows belong to CAT1 (participant view by P#)
     TABLE_STATE.rowCats = new Array(rows.length).fill(1);
+    updateColorState(null, ["Participants"], null);
 
     renderTable(false);
   }
@@ -1543,8 +1672,26 @@ function bindToolbar() {
 
   RADQY.setSelectedRowIndices = function (idxs) {
     if (!Array.isArray(idxs)) idxs = [];
-    TABLE_STATE.selectedIds = new Set(idxs);
+    const cleaned = idxs
+      .map(v => Number(v))
+      .filter(n => Number.isFinite(n));
+
+    TABLE_STATE.selectedIds = new Set(cleaned);
+    window.RADQY._selectedIndices = cleaned.slice();
+    window.RADQY_LAST_SELECTED = cleaned.length ? cleaned[cleaned.length - 1] : null;
+
     updateSelectionStyles();
+    if (cleaned.length) {
+      scrollRowIntoView(cleaned[cleaned.length - 1]);
+    }
+
+    document.dispatchEvent(new CustomEvent("radqy:selection-changed", {
+      detail: {
+        count: cleaned.length,
+        indices: cleaned.slice(),
+        selectedIndices: cleaned.slice()
+      }
+    }));
   };
 
   // 🔥 NEW: expose current color category index for a table row
@@ -1576,6 +1723,15 @@ function bindToolbar() {
     return { cat, header: colorBy, value };
   };
 
+  RADQY.getColorState = function () {
+    const cs = window.RADQY_COLOR || {};
+    return {
+      header: cs.header || null,
+      categories: Array.isArray(cs.categories) ? cs.categories.slice() : [],
+      mapEntries: cs.map ? Array.from(cs.map.entries()) : []
+    };
+  };
+
   // Exported hook so other modules can refresh legend counts (e.g., after color-by change)
   window.recountLegend = function () {
     updateMetaCounts(TABLE_STATE.headers, TABLE_STATE.rows);
@@ -1600,6 +1756,94 @@ function bindToolbar() {
     bindToolbar();
     if (window.DATA && window.DATA.HEADERS && window.DATA.ROWS) {
       loadFromDATA(window.DATA);
+    }
+  });
+
+  // Keep table selection in sync with external selection sources (PCP, BAR, images, etc.)
+  document.addEventListener("radqy:selection-changed", (e) => {
+    const det = e && e.detail ? e.detail : {};
+    let idxs = null;
+    if (Array.isArray(det.indices)) idxs = det.indices;
+    else if (Array.isArray(det.selectedIndices)) idxs = det.selectedIndices;
+    else if (det.count === 0) idxs = [];
+
+    if (!idxs) return;
+
+    const incoming = new Set(
+      idxs
+        .map(v => Number(v))
+        .filter(n => Number.isFinite(n))
+    );
+
+    let changed = incoming.size !== TABLE_STATE.selectedIds.size;
+    if (!changed) {
+      for (const v of incoming) {
+        if (!TABLE_STATE.selectedIds.has(v)) {
+          changed = true;
+          break;
+        }
+      }
+    }
+
+    if (!changed) return;
+
+    TABLE_STATE.selectedIds = incoming;
+    updateSelectionStyles();
+
+    if (incoming.size) {
+      const last = Array.from(incoming).pop();
+      window.RADQY_LAST_SELECTED = last;
+      scrollRowIntoView(last);
+    }
+  });
+
+  // Hover sync from other panels
+  document.addEventListener("radqy:hover:change", (e) => {
+    const det = e && e.detail ? e.detail : {};
+    const caseName = det.caseName != null ? String(det.caseName) : null;
+    const on = !!det.on;
+    const indicesArr = Array.isArray(det.indices) ? det.indices : null;
+
+    const tbody = $("#tablehost tbody");
+    if (!tbody) return;
+
+    // clear all on hover-off without a case/indices
+    if (!on || (!caseName && !indicesArr)) {
+      $$("tr.row-hover-sync", tbody).forEach(tr => tr.classList.remove("row-hover-sync"));
+      return;
+    }
+
+    if (indicesArr && indicesArr.length) {
+      const idxSet = new Set(
+        indicesArr
+          .map(v => Number(v))
+          .filter(n => Number.isFinite(n))
+      );
+      $$("tr", tbody).forEach(tr => {
+        const idx = Number(tr.dataset.rowIndex || -1);
+        if (idxSet.has(idx)) {
+          tr.classList.add("row-hover-sync");
+        } else {
+          tr.classList.remove("row-hover-sync");
+        }
+      });
+      return;
+    }
+
+    let matched = false;
+    $$("tr", tbody).forEach(tr => {
+      const idx = Number(tr.dataset.rowIndex || -1);
+      const candidate = getCaseNameForRow(idx);
+      if (String(candidate) === caseName) {
+        tr.classList.add("row-hover-sync");
+        matched = true;
+      } else {
+        tr.classList.remove("row-hover-sync");
+      }
+    });
+
+    if (!matched) {
+      $$("tr", tbody).forEach(tr => tr.classList.remove("row-hover-sync"));
     }
   });
 

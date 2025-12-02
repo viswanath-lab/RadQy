@@ -24,7 +24,7 @@
   stroke: var(--color-base-cat1);
   stroke-width: 2px;
   fill: none;
-  opacity: 0.4;
+  opacity: 1;
   cursor: pointer;
   transition: stroke 0.12s linear, stroke-width 0.12s linear, opacity 0.12s linear;
 }
@@ -112,8 +112,7 @@
 .pcp-hover-target-tick .pcp-part-tick-label {
   opacity: 1 !important;
   fill: var(--row-selected-bg) !important;
-  font-weight: 700 !important;
-  font-size: 1.2em !important;
+  font-size: 1em !important;
   paint-order: stroke;
   stroke: var(--row-selected-fg);
   stroke-width: 2px;
@@ -127,39 +126,51 @@
 .pcp-selected-tick .pcp-part-tick-label {
   opacity: 1 !important;
   fill: var(--row-selected-bg) !important;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
+  font-size: 0.95em !important;
   paint-order: stroke;
   stroke: var(--row-selected-fg);
   stroke-width: 2px;
   stroke-linejoin: round;
 }
 
-.pcp-axis-title {
-  font-size: 13px;
-  font-weight: 600;
-  fill: #000;
-  paint-order: stroke;
-  stroke: #fff;
-  stroke-width: 2px;
-  stroke-linejoin: round;
+/* P# labels shown on hover/selection (controlled via JS classes) */
+.pcp-part-p-label {
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--row-selected-bg);
   pointer-events: none;
 }
-.pcp-axis-aux .pcp-axis-title    { fill: var(--color-aux-border); }
-.pcp-axis-tag .pcp-axis-title   { fill: var(--color-tags-border); }
-.pcp-axis-iqms .pcp-axis-title  { fill: var(--color-iqms-border); }
-.pcp-axis-ext .pcp-axis-title   { fill: var(--color-ext-border); }
+.pcp-part-p-label.is-selected {
+  font-size: 9px;
+  font-weight: 200;
+}
+.pcp-part-p-label.is-hover {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pcp-axis-title {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #000;
+  paint-order: normal;
+  stroke: none;
+  pointer-events: none;
+}
 .pcp-axis-title-bg {
   pointer-events: none;
   stroke: none;
   opacity: 1;
 }
-.pcp-axis-tag-bg  { fill: var(--color-tags-border); }
-.pcp-axis-iqms-bg { fill: var(--color-iqms-border); }
-.pcp-axis-ext-bg  { fill: var(--color-ext-border); }
+.pcp-axis-tag-bg  { fill: var(--color-tag); }
+.pcp-axis-iqms-bg { fill: var(--color-iqm); }
+.pcp-axis-ext-bg  { fill: var(--color-ext); }
+.pcp-axis-aux-bg  { fill: var(--color-aux); }
 .pcp-axis-other-bg{ fill: #ececec; }
 
 .pcp-ext-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   fill: #000;
   paint-order: stroke;
@@ -175,7 +186,23 @@
 
 /* category ticks */
 .pcp-cat-tick text { font-size: 12px; }
-.pcp-hover-target-tick.pcp-cat-tick text { font-size: 1em !important; transform: translateX(0) scale(1) !important; }
+.pcp-cat-badge {
+  opacity: 0.9;
+  stroke: #111;
+  stroke-width: 0.6px;
+}
+.pcp-cat-tick text {
+  fill: #000 !important;
+  font-weight: 400;
+  font-size: 9px;
+}
+.pcp-cat-tick.selected text {
+  fill: #fff !important;
+}
+.pcp-hover-target-tick.pcp-cat-tick text {
+  font-size: 1em !important;
+  transform: translateX(0) scale(1) !important;
+}
 
 /* brushing */
 .dimension .brush .extent {

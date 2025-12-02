@@ -194,13 +194,17 @@
 
     panel.innerHTML = "";
 
-    const selectedIdxs =
+    let selectedIdxs =
       (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function")
         ? window.RADQY.getSelectedRowIndices()
         : [];
 
-    // Keep render order aligned with current table order
+    // Keep render order aligned with current table order, but move most recent selection to top
     selectedIdxs.sort((a, b) => a - b);
+    const lastSel = window.RADQY_LAST_SELECTED;
+    if (Number.isFinite(lastSel) && selectedIdxs.includes(lastSel)) {
+      selectedIdxs = [lastSel].concat(selectedIdxs.filter(i => i !== lastSel));
+    }
 
     if (!selectedIdxs.length) {
       panel.innerHTML =
