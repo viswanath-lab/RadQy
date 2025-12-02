@@ -2,22 +2,6 @@
  * BAR CHART STYLES
  *************************************************/
 
-.chart-pane {
-  min-height: 360px;
-  height: 360px;
-}
-
-#chart-svg-container {
-  position: relative;
-  min-height: 360px;
-}
-
-#chart-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 .bar { fill-opacity: 1; cursor: pointer; }
 
 .bar.cat1 { fill: var(--color-base-cat1) !important; }

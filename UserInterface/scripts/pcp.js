@@ -1463,9 +1463,8 @@ function broadcastDataUpdated(what){
       window.CURRENT_HEADERS = _headers();
     }
 
-    // Match margins for PCP and BAR to keep panel width stable and leave room for labels
-    CHART_MARGIN  = { top: 10, right: 120, bottom: 100, left: 0 };
-    PARAC_MARGIN  = { top: 60, right: 120, bottom: 100, left: 10 };
+    CHART_MARGIN  = { top: 10, right: 60, bottom: 100, left: 0 };
+    PARAC_MARGIN  = { top: 60, right: 40, bottom: 100, left: 10 };   // right margin
 
     if (!$CHART().height()) $CHART().css('height', '260px');
     if (!$PARAC().height()) $PARAC().css('height', '260px');
@@ -1546,6 +1545,10 @@ function broadcastDataUpdated(what){
   $(document).on("click", "#vis-switch-btn", function () {
     window.CHART_STATE.visType = (window.CHART_STATE.visType === "bar_chart") ? "parallel_coordinate" : "bar_chart";
     applyVisType();
+    // Re-render after switching to BAR so the SVG uses the visible container size
+    if (window.CHART_STATE.visType === "bar_chart" && typeof window.renderChartsView === "function") {
+      window.renderChartsView();
+    }
   });
 
   document.addEventListener("click", function () {

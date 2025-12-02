@@ -82,16 +82,19 @@ function catIdxForValue(v,domain){const i=domain.indexOf(v);return Math.max(0,i)
 Bar._inferNumeric=inferNumericHeaders;Bar._inferCategorical=inferCategoricalHeaders;
 
 Bar.render=function(svgG,width,height,margin,externalDataset,metric,chartState,getPLabel,onSelect){
-console.log("BAR render start",{
-  container:{width,height,margin},
-  chartState,
-  chartRect:(function(){
-    try{const el=document.querySelector('#chart-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
-  })(),
-  paracRect:(function(){
-    try{const el=document.querySelector('#parac-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
-  })()
-});
+  console.log("BAR render start",{
+    container:{width,height,margin},
+    chartState,
+    chartRect:(function(){
+      try{const el=document.querySelector('#chart-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
+    })(),
+    chartContainerRect:(function(){
+      try{const el=document.querySelector('#chart-svg-container');return el?el.getBoundingClientRect():null;}catch(e){return null;}
+    })(),
+    paracRect:(function(){
+      try{const el=document.querySelector('#parac-svg');return el?el.getBoundingClientRect():null;}catch(e){return null;}
+    })()
+  });
 const ds=externalDataset&&externalDataset.length?externalDataset:getMergedDataset();
 setDefaultMetric(ds);
 refreshBarSortOptions();
@@ -103,6 +106,7 @@ const dataset=ds;if(!dataset.length||!svgG)return;
 const numericHeaders=inferNumericHeaders(dataset);
 if(!_state.currentMetric||!numericHeaders.includes(_state.currentMetric))_state.currentMetric=(numericHeaders.includes('RNG')?'RNG':(numericHeaders[0]||null));
 if(!_state.currentMetric){svgG.selectAll('*').remove();return;}
+console.log("BAR data",{len:dataset.length,numericHeaders,currentMetric:_state.currentMetric});
 const base=dataset.map(function(row,idx){return{p_label:getPLabel?getPLabel(row,idx):pLabelForIndex(idx),case_name:(function(){for(const k in row)if(/^Participant\b/i.test(k))return String(row[k]??idx);return String(idx);})(),value:Number(row[_state.currentMetric]),_row:row,_idx:idx};}).filter(d=>Number.isFinite(d.value));
 
 const colorDetailForRow=function(idx){
