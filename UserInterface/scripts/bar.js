@@ -130,8 +130,7 @@ function inferNumericHeaders(dataset){
   (window.DATA?.EXTS?.headers||[]).forEach(h=>allowed.add(h));
   (window.DATA?.AUXS?.headers||[]).forEach(h=>allowed.add(h));
   const headers=Object.keys(dataset[0]||{});
-  const hiddenRaw=window.VIEW_STATE?.hiddenHeaders||new Set();
-  const hiddenLower=new Set(Array.from(hiddenRaw||[]).map(h=>String(h).toLowerCase()));
+  const hidden=window.VIEW_STATE?.hiddenHeaders||new Set();
   const allowAll = allowed.size === 0; // fallback: allow any numeric column
   const out=[];
   for(const h of headers){
@@ -139,8 +138,7 @@ function inferNumericHeaders(dataset){
     if(!allowAll && !allowed.has(h))continue;
     if(/^Participant\b/i.test(h))continue;
     if(h.trim()==='P#')continue;
-    const hLow=String(h).toLowerCase();
-    if(hiddenLower.has(hLow))continue;
+    if(hidden.has&&hidden.has(h))continue;
     let saw=false,allNum=true;
     for(let r=0;r<dataset.length;r++){
       const raw=dataset[r][h];
@@ -186,6 +184,17 @@ const colorDetailForRow=function(idx){
   return{cat:1,value:null,header:null};
 };
 
+function currentSelectionSet(){
+  if (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function") {
+    const arr = window.RADQY.getSelectedRowIndices() || [];
+    return new Set(arr.filter(v => Number.isFinite(v)));
+  }
+  if (window.RADQY && Array.isArray(window.RADQY._selectedIndices)) {
+    return new Set(window.RADQY._selectedIndices.filter(v => Number.isFinite(v)));
+  }
+  return new Set();
+}
+
 base.forEach(function(d){
   const det=colorDetailForRow(d._idx);
   d._catIdx=det.cat;
@@ -212,10 +221,12 @@ svgG.append('g').attr('class','y axis').attr('transform','translate('+chartW+',0
 var metricLabel=(_state.currentMetric||(window.CHART_STATE&&window.CHART_STATE.currentMetric)||'value');
 var tip=d3.tip().attr('class','d3-tip').offset([-10,0]).html(function(d){return"<span class='tip-name'>"+d.p_label+"</span><br/>"+"<span class='tip-val'>"+metricLabel+"="+prettyNumber(d.value)+"</span>";});
 d3.select('body').call(tip);d3.select(svgG.node().ownerSVGElement).call(tip);d3.select(svgG.node().ownerSVGElement).on('mouseleave.bar-tip-hide',function(){tip.hide();});
+const selectionSet = currentSelectionSet();
 const bars=svgG.selectAll('rect.bar').data(data,d=>d.case_name);
 const enter=bars.enter().append('rect').attr('class',function(d){return'bar cat'+String(d._catIdx||1);}).attr('data-case',d=>d.case_name).attr('x',d=>x(d.p_label)).attr('width',Math.max(x.rangeBand()-1,1)).attr('y',d=>y(d.value)).attr('height',d=>Math.abs(chartH-y(d.value)));
-enter.each(function(d){if(_state.selectedCase===d.case_name)d3.select(this).classed('selected-bar',true);});
-enter.on('mouseover',function(d){tip.show(d,this);if(_state.selectedCase!==d.case_name)d3.select(this).classed('bar-hover-target',true);if(typeof global.hoverTableRow==='function')global.hoverTableRow(d.case_name,true);emitHover(d.case_name,true,d._idx);}).on('mouseout',function(d){tip.hide();d3.select(this).classed('bar-hover-target',false);if(typeof global.hoverTableRow==='function')global.hoverTableRow(d.case_name,false);emitHover(d.case_name,false,d._idx);}).on('click',function(d){try{tip.hide();}catch(e){}d3.selectAll('.d3-tip').style('display','none');if(d3.event&&typeof d3.event.stopPropagation==='function')d3.event.stopPropagation();if(typeof window.selectCaseAndRefresh==='function'){window.selectCaseAndRefresh(d.case_name);}else{_state.selectedCase=d.case_name;if(typeof window.selectRowInTable==='function')window.selectRowInTable(d.case_name);}});
+enter.each(function(d){ if (selectionSet.has(d._idx) || _state.selectedCase===d.case_name) d3.select(this).classed('selected-bar',true); });
+enter.on('mouseover',function(d){tip.show(d,this);if(!selectionSet.has(d._idx))d3.select(this).classed('bar-hover-target',true);if(typeof global.hoverTableRow==='function')global.hoverTableRow(d.case_name,true);emitHover(d.case_name,true,d._idx);}).on('mouseout',function(d){tip.hide();d3.select(this).classed('bar-hover-target',false);if(typeof global.hoverTableRow==='function')global.hoverTableRow(d.case_name,false);emitHover(d.case_name,false,d._idx);}).on('click',function(d){try{tip.hide();}catch(e){}d3.selectAll('.d3-tip').style('display','none');if(d3.event&&typeof d3.event.stopPropagation==='function')d3.event.stopPropagation();var set=currentSelectionSet();if(set.has(d._idx)){set.delete(d._idx);}else{set.add(d._idx);}if(window.RADQY && typeof window.RADQY.setSelectedRowIndices==='function'){window.RADQY.setSelectedRowIndices(Array.from(set));}else if(typeof window.selectCaseAndRefresh==='function'){window.selectCaseAndRefresh(d.case_name);}else if(typeof window.selectRowInTable==='function'){window.selectRowInTable(d.case_name);}svgG.selectAll('rect.bar').classed('selected-bar',function(b){return set.has(b._idx);});});
+bars.classed('selected-bar', function(d){ return selectionSet.has(d._idx); });
 bars.exit().each(function(){tip.hide();d3.select(this).remove();});
 d3.select(svgG.node().ownerSVGElement).on('click.bar-clear',function(){const t=d3.event&&d3.event.target&&d3.event.target.tagName;if(t==='rect')return;if(typeof global.selectCaseAndRefresh==='function')global.selectCaseAndRefresh(null);else{_state.selectedCase=null;svgG.selectAll('rect.bar').classed('selected-bar',false).classed('bar-hover-target',false);if(typeof global.selectRowInTable==='function')global.selectRowInTable(null);}});
 (function(){const dom=(domainCats&&domainCats.length)?domainCats:['Participants'];const catMap={};svgG.selectAll('rect.bar').each(function(d){catMap[String(d.case_name)]=d._catIdx||1;});if(global.setRowCategoryClasses)global.setRowCategoryClasses(catMap,dom);})();

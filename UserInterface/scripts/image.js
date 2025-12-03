@@ -200,11 +200,27 @@
         : [];
 
     // Keep render order aligned with current table order, but move most recent selection to top
-    selectedIdxs.sort((a, b) => a - b);
-    const lastSel = window.RADQY_LAST_SELECTED;
-    if (Number.isFinite(lastSel) && selectedIdxs.includes(lastSel)) {
-      selectedIdxs = [lastSel].concat(selectedIdxs.filter(i => i !== lastSel));
-    }
+    selectedIdxs = (function orderByTable(idxArr){
+      if (!window.dt || !idxArr.length) return idxArr.slice().sort((a,b)=>a-b);
+      const set = new Set(idxArr);
+      const ordered = [];
+      window.dt.rows({ order: 'applied' }).every(function(){
+        const idx = this.index();
+        if (set.has(idx)) ordered.push(idx);
+      });
+      if (!ordered.length) return idxArr.slice().sort((a,b)=>a-b);
+      const lastSel = window.RADQY_LAST_SELECTED;
+      if (Number.isFinite(lastSel) && set.has(lastSel)) {
+        ordered.unshift(lastSel);
+        const seen = new Set([lastSel]);
+        return ordered.filter(i => {
+          if (seen.has(i)) return false;
+          seen.add(i);
+          return true;
+        });
+      }
+      return ordered;
+    })(selectedIdxs);
 
     if (!selectedIdxs.length) {
       panel.innerHTML =

@@ -1471,9 +1471,13 @@ function broadcastDataUpdated(what){
 
     var numericNow = inferNumericColumns(dataset);
 
-    var defaultMetric = (window.CHART_STATE && window.CHART_STATE.measureBy && numericNow.indexOf(window.CHART_STATE.measureBy) !== -1)
-      ? window.CHART_STATE.measureBy
-      : (numericNow[0] || null);
+    var cfgDefault = (window.RADQY_CONFIG && window.RADQY_CONFIG.chartDefaults && window.RADQY_CONFIG.chartDefaults.measureBy)
+      ? window.RADQY_CONFIG.chartDefaults.measureBy
+      : null;
+    var prefMetric = (window.CHART_STATE && window.CHART_STATE.currentMetric && numericNow.indexOf(window.CHART_STATE.currentMetric) !== -1)
+      ? window.CHART_STATE.currentMetric
+      : (cfgDefault && numericNow.indexOf(cfgDefault) !== -1 ? cfgDefault : null);
+    var defaultMetric = prefMetric || (numericNow[0] || null);
 
     if (!window.CHART_STATE.initialized) {
       window.CHART_STATE.paracMetrics = numericNow.slice();

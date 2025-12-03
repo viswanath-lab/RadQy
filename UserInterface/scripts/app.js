@@ -20,7 +20,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (window.CHART_STATE) {
     if (cdef.sortBy)    window.CHART_STATE.sortBy    = cdef.sortBy;
-    if (cdef.measureBy) window.CHART_STATE.measureBy = cdef.measureBy;
+    if (cdef.measureBy) {
+      window.CHART_STATE.measureBy     = cdef.measureBy;
+      window.CHART_STATE.currentMetric = cdef.measureBy;
+    }
     if (cdef.colorBy)   window.CHART_STATE.colorBy   = cdef.colorBy;
   }
 });
