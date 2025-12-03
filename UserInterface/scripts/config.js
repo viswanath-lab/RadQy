@@ -35,6 +35,7 @@ window.RADQY_CONFIG = {
     distanceFn: "Euclidean",
     minDist: 0.1,
     spread: 1,
+    seed: 42, // fixed seed for reproducible UMAP layouts
     distanceOptions: [
       "Euclidean","Manhattan","Chebyshev","Minkowski","Canberra","BrayCurtis",
       "Cosine","Correlation","Hamming","Jaccard","Dice","Kulsinski",

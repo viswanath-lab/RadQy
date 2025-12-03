@@ -1,15 +1,21 @@
-window.UMAP_STATE = window.UMAP_STATE || {
-  nComponents: 2,
-  nNeighbors: 15,
-  distanceFn: "Euclidean",
-  minDist: 0.1,
-  spread: 1,
-  embedding: null
-};
+// Seed UMAP state from config defaults (no duplication)
+(function seedUmapState(){
+  const d = (window.RADQY_CONFIG && window.RADQY_CONFIG.umapDefaults) || {};
+  if (!window.UMAP_STATE) window.UMAP_STATE = {};
+  window.UMAP_STATE.nComponents = window.UMAP_STATE.nComponents ?? (d.nComponents ?? 2);
+  window.UMAP_STATE.nNeighbors  = window.UMAP_STATE.nNeighbors  ?? (d.nNeighbors  ?? 15);
+  window.UMAP_STATE.distanceFn  = window.UMAP_STATE.distanceFn  ?? (d.distanceFn  ?? "Euclidean");
+  window.UMAP_STATE.minDist     = window.UMAP_STATE.minDist     ?? (d.minDist     ?? 0.1);
+  window.UMAP_STATE.spread      = window.UMAP_STATE.spread      ?? (d.spread      ?? 1);
+  window.UMAP_STATE.seed        = window.UMAP_STATE.seed        ?? (d.seed        ?? null);
+  window.UMAP_STATE.embedding   = window.UMAP_STATE.embedding   ?? null;
+})();
 
 (function(){
   const hostId = "umaphost";
   let plotReady = false;
+  let selectionShape = null;
+  let suppressWarn = false;
 
   function loadPlotly(cb){
     if (window.Plotly) return cb();
@@ -80,12 +86,9 @@ window.UMAP_STATE = window.UMAP_STATE || {
   function catIndex(rowIdx){
     if (window.RADQY && typeof window.RADQY.getRowCategoryDetail === "function"){
       const det = window.RADQY.getRowCategoryDetail(rowIdx);
-      if (det && Number.isFinite(det.cat)) {
-        // table categories are 1-based; convert to 0-based palette index
-        return Math.max(0, det.cat - 1);
-      }
+      if (det && Number.isFinite(det.cat)) return det.cat;
     }
-    return 0;
+    return 1;
   }
 
   function selectionSet(){
@@ -118,7 +121,9 @@ window.UMAP_STATE = window.UMAP_STATE || {
       "marker.size":[sizes],
       "marker.line.width":[widths],
       "marker.opacity":[1],
-      "selectedpoints":[Array.from(selectedPoints)]
+      "selectedpoints":[Array.from(selectedPoints)],
+      "selected.marker.opacity":[1],
+      "unselected.marker.opacity":[1]
     });
   }
 
@@ -176,13 +181,67 @@ window.UMAP_STATE = window.UMAP_STATE || {
           width: embedding.map(()=> 0),
           color: embedding.map(()=> "transparent")
         }
-      }
+      },
+      selected:   { marker: { opacity: 1 } },
+      unselected: { marker: { opacity: 1 } }
     };
+  }
+
+  function buildLassoPath(lassoPoints){
+    if (!lassoPoints) return null;
+    const xs = lassoPoints.x || [];
+    const ys = lassoPoints.y || [];
+    if (!xs.length || xs.length !== ys.length) return null;
+    let path = `M ${xs[0]},${ys[0]}`;
+    for (let i=1;i<xs.length;i++){
+      path += ` L ${xs[i]},${ys[i]}`;
+    }
+    path += " Z";
+    return path;
+  }
+
+  function setSelectionShape(ev){
+    let shape = null;
+    if (ev && ev.range && ev.range.x && ev.range.y){
+      shape = {
+        type: "rect",
+        xref: "x",
+        yref: "y",
+        x0: ev.range.x[0],
+        x1: ev.range.x[1],
+        y0: ev.range.y[0],
+        y1: ev.range.y[1],
+        line: { color: "rgba(59,110,217,0.9)", width: 2 },
+        fillcolor: "rgba(59,110,217,0.08)"
+      };
+    } else if (ev && ev.lassoPoints){
+      const path = buildLassoPath(ev.lassoPoints);
+      if (path){
+        shape = {
+          type: "path",
+          path,
+          xref: "x",
+          yref: "y",
+          line: { color: "rgba(59,110,217,0.9)", width: 2 },
+          fillcolor: "rgba(59,110,217,0.08)"
+        };
+      }
+    }
+    selectionShape = shape;
+    Plotly.relayout(hostId, { shapes: shape ? [shape] : [] });
   }
 
   function plotEmbedding(embedding, rows){
     if (!embedding) return;
     loadPlotly(()=>{
+      if (!suppressWarn){
+        suppressWarn = true;
+        const origWarn = console.warn;
+        console.warn = function(msg, ...rest){
+          if (typeof msg === "string" && msg.includes("unrecognized GUI edit: selections")) return;
+          return origWarn.apply(console, [msg, ...rest]);
+        };
+      }
       const trace = buildTrace(embedding, rows);
       const layout = {
         margin:{l:10,r:10,t:10,b:10},
@@ -190,12 +249,61 @@ window.UMAP_STATE = window.UMAP_STATE || {
         hovermode:"closest",
         xaxis:{showgrid:false, zeroline:false, showticklabels:false},
         yaxis:{showgrid:false, zeroline:false, showticklabels:false},
-        dragmode:"pan"
+        dragmode:"lasso",
+        shapes: selectionShape ? [selectionShape] : []
       };
-      const cfg = {responsive:true, scrollZoom:true, displaylogo:false};
+      const cfg = {
+        responsive:true,
+        scrollZoom:true,
+        displaylogo:false,
+        modeBarButtonsToAdd:[],
+        modeBarButtonsToRemove:[],
+        displayModeBar:true
+      };
       Plotly.react(hostId, [trace], layout, cfg).then(() => {
         const plot = document.getElementById(hostId);
         if (!plotReady) {
+          // Lasso/box selection: keep hover feedback while drawing
+          plot.on("plotly_selecting", ev=>{
+            const pts = (ev && ev.points) || [];
+            const last = pts[pts.length - 1];
+            const idx = last ? last.pointIndex : -1;
+            restyleMarkers(idx);
+            const name = idx >= 0 ? caseNameForRow(idx) : null;
+            try{
+              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:name,on:idx>=0,rowIndex:idx}}));
+            }catch(e){}
+            if (typeof window.hoverTableRow === "function") {
+              window.hoverTableRow(name, idx>=0);
+            }
+          });
+          plot.on("plotly_selected", ev=>{
+            const pts = (ev && ev.points) || [];
+            const idxs = Array.from(new Set(pts.map(p=>p.pointIndex).filter(Number.isFinite)));
+            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
+              window.RADQY.setSelectedRowIndices(idxs);
+            }
+            setSelectionShape(ev);
+            restyleMarkers(-1);
+            try{
+              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
+            }catch(e){}
+            if (typeof window.hoverTableRow === "function") {
+              window.hoverTableRow(null, false);
+            }
+          });
+          plot.on("plotly_deselect", ()=>{
+            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
+              window.RADQY.setSelectedRowIndices([]);
+            }
+            restyleMarkers(-1);
+            try{
+              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
+            }catch(e){}
+            if (typeof window.hoverTableRow === "function") {
+              window.hoverTableRow(null, false);
+            }
+          });
           plot.on("plotly_click", ev=>{
             const pt = ev && ev.points && ev.points[0];
             if (!pt) return;
@@ -246,6 +354,9 @@ window.UMAP_STATE = window.UMAP_STATE || {
     let embedding = null;
     loadUmap(()=>{
       const distName = (state.distanceFn || "euclidean").toLowerCase();
+      if (state.seed != null && typeof Math.seedrandom === "function") {
+        Math.seedrandom(state.seed);
+      }
       const umap = new UMAP({
         nComponents: state.nComponents || 2,
         nNeighbors: Math.max(2, Math.min(matrix.length-1, state.nNeighbors || 15)),
@@ -304,7 +415,11 @@ window.UMAP_STATE = window.UMAP_STATE || {
 
   document.addEventListener("DOMContentLoaded", initControls);
   document.addEventListener("radqy:data:ready", ()=> window.renderUMAP({recompute:true}));
-  document.addEventListener("radqy:data:updated", ()=> window.renderUMAP({recompute:true}));
+  document.addEventListener("radqy:data:updated", (e)=>{
+    const det = e && e.detail ? e.detail : {};
+    if (det && det.skipUMAP) return;
+    window.renderUMAP({recompute:true});
+  });
   document.addEventListener("radqy:view:columns", ()=> window.renderUMAP({recompute:true}));
   document.addEventListener("radqy:colorby:changed", ()=> window.renderUMAP());
   document.addEventListener("radqy:selection-changed", ()=> restyleMarkers(-1));

@@ -84,7 +84,7 @@
   height: var(--btn-h-sm);
   line-height: var(--btn-h-sm);
   padding-right: 5.75px;
-  -moz-appearance: textfield;
+  /* -moz-appearance: textfield; */
   box-sizing: border-box;
 }
 #panelumap .ctrlsm[type="number"]::-webkit-inner-spin-button,
@@ -100,8 +100,8 @@
 #panelumap .ctrlsm[type="number"]:focus::-webkit-outer-spin-button{
   opacity: .6;
 }
-#panelumap .ctrlsm[type="number"] { -moz-appearance: textfield; }
-#panelumap .ctrlsm[type="number"]:focus { -moz-appearance: number-input; }
+/* #panelumap .ctrlsm[type="number"] { -moz-appearance: textfield; }
+#panelumap .ctrlsm[type="number"]:focus { -moz-appearance: number-input; } */
 
 #umaphost{
   flex:1 1 auto;
@@ -111,7 +111,36 @@
   border-radius: var(--radius-md);
   box-shadow:var(--shadow-1);
   overflow:hidden;
+  position:relative;
 }
 #umaphost canvas{
   overflow:hidden !important;
+}
+
+/* Vertical modebar aligned to the right of the plot */
+#umaphost .modebar-container{
+  inset:0;
+  pointer-events:none;
+}
+#umaphost .modebar{
+  position:absolute;
+  top:10px;
+  right:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+  padding:6px;
+  border-radius:var(--radius-md);
+  background:rgba(255,255,255,0.9);
+  box-shadow:var(--shadow-1);
+  pointer-events:auto;
+}
+#umaphost .modebar-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+#umaphost .modebar-btn{
+  margin:0;
 }

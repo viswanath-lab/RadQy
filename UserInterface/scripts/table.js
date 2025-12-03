@@ -1161,6 +1161,46 @@
     }));
   }
 
+  // Expose a helper to add an AUX column populated from the current selection
+  window.RADQY.addSelectionAuxColumn = function (name, selectedIdxs, labels) {
+    if (!TABLE_STATE.headers.length) return null;
+    if (!Array.isArray(selectedIdxs) || !selectedIdxs.length) return null;
+
+    const headers = TABLE_STATE.headers;
+    const rows    = TABLE_STATE.rows;
+    const meta    = ensureMetaLists();
+    const selected = new Set(selectedIdxs);
+
+    const insertIdx = 2; // after PID column
+    const base = (name && String(name).trim()) || "Selection";
+    let colName = base;
+    let k = 2;
+    while (headers.includes(colName)) {
+      colName = base + " " + k;
+      k += 1;
+    }
+
+    headers.splice(insertIdx, 0, colName);
+
+    const selLabel = (labels && labels.selected) || "Selected";
+    const unselLabel = (labels && labels.unselected) || "Unselected";
+    rows.forEach((r, idx) => {
+      r[colName] = selected.has(idx) ? selLabel : unselLabel;
+    });
+
+    const low = colName.toLowerCase();
+    if (!meta.auxs.includes(low)) meta.auxs.push(low);
+
+    renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(headers, rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "add_column", name: colName, skipUMAP: true }
+    }));
+
+    return colName;
+  };
+
   function parseDelimited(text, delim) {
     const lines = String(text || "")
       .replace(/\r\n/g, "\n")
