@@ -15,7 +15,7 @@
   const hostId = "umaphost";
   let plotReady = false;
   let selectionShape = null;
-  let suppressWarn = false;
+  let selectedPoints = [];
 
   function loadPlotly(cb){
     if (window.Plotly) return cb();
@@ -228,21 +228,17 @@
       }
     }
     selectionShape = shape;
-    Plotly.relayout(hostId, { shapes: shape ? [shape] : [] });
   }
 
   function plotEmbedding(embedding, rows){
     if (!embedding) return;
     loadPlotly(()=>{
-      if (!suppressWarn){
-        suppressWarn = true;
-        const origWarn = console.warn;
-        console.warn = function(msg, ...rest){
-          if (typeof msg === "string" && msg.includes("unrecognized GUI edit: selections")) return;
-          return origWarn.apply(console, [msg, ...rest]);
-        };
-      }
+      const externalSel = Array.from(selectionSet());
+      if (externalSel.length) selectedPoints = externalSel;
+      Plotly.purge(hostId);
+      plotReady = false;
       const trace = buildTrace(embedding, rows);
+      trace.selectedpoints = [selectedPoints];
       const layout = {
         margin:{l:10,r:10,t:10,b:10},
         showlegend:false,
@@ -283,7 +279,10 @@
             if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
               window.RADQY.setSelectedRowIndices(idxs);
             }
+            selectedPoints = idxs;
             setSelectionShape(ev);
+            Plotly.restyle(hostId, { selectedpoints: [selectedPoints] });
+            Plotly.relayout(hostId, { shapes: selectionShape ? [selectionShape] : [] });
             restyleMarkers(-1);
             try{
               document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
@@ -296,6 +295,10 @@
             if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
               window.RADQY.setSelectedRowIndices([]);
             }
+            selectedPoints = [];
+            selectionShape = null;
+            Plotly.restyle(hostId, { selectedpoints: [[]] });
+            Plotly.relayout(hostId, { shapes: [] });
             restyleMarkers(-1);
             try{
               document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
@@ -422,7 +425,10 @@
   });
   document.addEventListener("radqy:view:columns", ()=> window.renderUMAP({recompute:true}));
   document.addEventListener("radqy:colorby:changed", ()=> window.renderUMAP());
-  document.addEventListener("radqy:selection-changed", ()=> restyleMarkers(-1));
+  document.addEventListener("radqy:selection-changed", ()=>{
+    selectedPoints = Array.from(selectionSet());
+    restyleMarkers(-1);
+  });
 
   // Hover sync inbound: highlight corresponding point
   document.addEventListener("radqy:hover:change", function(e){
