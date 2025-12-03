@@ -74,8 +74,8 @@ RADQY.PANELS = RADQY.MAIN.concat("report");
 RADQY._STORAGE_KEY = "radqy_panel_visibility";
 RADQY._DEFAULT_VIS = {
   table:  true,
-  chart:  true,
-  umap:   false,
+  chart:  false,
+  umap:   true,
   image:  false,
   fgmask: false,
   bgmask: false,

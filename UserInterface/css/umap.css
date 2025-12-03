@@ -1,12 +1,34 @@
+#panelumap{
+  display:flex;
+  flex-direction:row;
+  align-items:flex-start;
+  gap:16px;
+  min-height:350px;
+}
+
+/* Toolbar stacking controls and Cohort Finder */
+#panelumap .toolbar{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:60px; /* controls gap between form and button */
+  margin:0;
+}
+
 .umap-form{
   display:grid;
   grid-template-columns:auto 105px;
-  row-gap:4px;
+  row-gap:6px;
   column-gap:12px;
   align-items:center;
   width:max-content;
-  padding:8px 0px;
-  transform: translateY(30px);
+  padding:0;
+}
+
+.umap-actions{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
 }
 
 /* Chart-like small controls */
@@ -26,7 +48,6 @@
   box-shadow:0 0 0 2px rgba(0,47,108,.15);
 }
 
-/* Labels match chart labels */
 .umap-form label{
   font-weight:normal;
   text-align:right;
@@ -36,14 +57,12 @@
   color:var(--color-muted);
 }
 
-/* ---------- Select (distanceFn) with the same ▼ triangle ---------- */
-/* Wrap the select in .select-wrap (see HTML snippet below) */
 .select-wrap{ position:relative; display:inline-block; }
 .select-wrap select.ctrlsm{
   appearance:none!important;
   -webkit-appearance:none!important;
   -moz-appearance:none!important;
-  padding-right:22px;            /* room for ▼ */
+  padding-right:22px;
   background:#fff;
   color:var(--color-emory-blue);
   border:1px solid var(--color-emory-blue);
@@ -61,38 +80,38 @@
   line-height:1;
 }
 
-/* size of the input itself – leaves room for the spin control */
 #panelumap .ctrlsm[type="number"]{
   height: var(--btn-h-sm);
   line-height: var(--btn-h-sm);
-  padding-right: 5.75px;           /* space for arrows */
-  -moz-appearance: textfield;    /* hide FF default */
+  padding-right: 5.75px;
+  -moz-appearance: textfield;
   box-sizing: border-box;
 }
-
-/* WebKit (Chrome/Edge/Safari): shrink, keep centered, don't lift */
 #panelumap .ctrlsm[type="number"]::-webkit-inner-spin-button,
 #panelumap .ctrlsm[type="number"]::-webkit-outer-spin-button{
   -webkit-appearance: inner-spin-button;
-  transform: scale(0.50) translateY(0);   /* smaller, no upward shift */
+  transform: scale(0.50) translateY(0);
   transform-origin: center center;
   margin: 0;
-  opacity: .0;                             /* hidden by default */
+  opacity: .0;
   transition: opacity .15s ease;
 }
-
-/* show arrows only on focus */
 #panelumap .ctrlsm[type="number"]:focus::-webkit-inner-spin-button,
 #panelumap .ctrlsm[type="number"]:focus::-webkit-outer-spin-button{
   opacity: .6;
 }
-
-/* Firefox: hide until focus, then show */
 #panelumap .ctrlsm[type="number"] { -moz-appearance: textfield; }
 #panelumap .ctrlsm[type="number"]:focus { -moz-appearance: number-input; }
 
-#panelumap .toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
+#umaphost{
+  flex:1 1 auto;
+  min-height:260px;
+  height: 350px;
+  border:1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow:var(--shadow-1);
+  overflow:hidden;
+}
+#umaphost canvas{
+  overflow:hidden !important;
 }

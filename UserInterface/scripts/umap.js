@@ -1,37 +1,324 @@
-window.UMAP_STATE = window.UMAP_STATE || {};
+window.UMAP_STATE = window.UMAP_STATE || {
+  nComponents: 2,
+  nNeighbors: 15,
+  distanceFn: "Euclidean",
+  minDist: 0.1,
+  spread: 1,
+  embedding: null
+};
 
-function initUmapControls(){
-  const d = (window.RADQY_CONFIG && window.RADQY_CONFIG.umapDefaults) || {};
+(function(){
+  const hostId = "umaphost";
+  let plotReady = false;
 
-  const elC  = document.getElementById("umap_components");
-  const elN  = document.getElementById("umap_neighbors");
-  const elM  = document.getElementById("umap_metric");
-  const elMD = document.getElementById("umap_mindist");
-  const elS  = document.getElementById("umap_spread");
-
-  if (elM && d.distanceOptions){
-    elM.innerHTML = d.distanceOptions.map(v => `<option value="${v}">${v}</option>`).join("");
+  function loadPlotly(cb){
+    if (window.Plotly) return cb();
+    const s = document.createElement("script");
+    s.src = "libs/plotly/plotly.min.js";
+    s.onload = cb;
+    document.body.appendChild(s);
   }
 
-  if (elC)  elC.value  = d.nComponents ?? 2;
-  if (elN)  elN.value  = d.nNeighbors  ?? 15;
-  if (elM)  elM.value  = d.distanceFn  ?? "Euclidean";
-  if (elMD) elMD.value = d.minDist     ?? 0.1;
-  if (elS)  elS.value  = d.spread      ?? 1;
+  function loadUmap(cb){
+    if (window.UMAP) return cb();
+    const s = document.createElement("script");
+    s.src = "libs/umap-js/umap-js.min.js";
+    s.onload = cb;
+    document.body.appendChild(s);
+  }
 
-  const sync = () => {
-    window.UMAP_STATE = {
-      nComponents: Number(elC.value),
-      nNeighbors:  Number(elN.value),
-      distanceFn:  elM.value,
-      minDist:     Number(elMD.value),
-      spread:      Number(elS.value)
+  function numericColumns(rows){
+    if (!rows || !rows.length) return [];
+    if (typeof window.radqyInferNumericColumns === "function"){
+      return window.radqyInferNumericColumns(rows);
+    }
+    const sample = rows[0] || {};
+    return Object.keys(sample).filter(k => Number.isFinite(parseFloat(sample[k])));
+  }
+
+  function buildMatrix(rows, cols){
+    return rows.map(r => cols.map(c => {
+      const v = r[c];
+      const num = (typeof v === "number") ? v : parseFloat(v);
+      return Number.isFinite(num) ? num : 0;
+    }));
+  }
+
+  function palette(kind, idx){
+    const css = getComputedStyle(document.documentElement);
+    const arr = {
+      base: [
+        css.getPropertyValue("--color-base-cat1"),
+        css.getPropertyValue("--color-base-cat2"),
+        css.getPropertyValue("--color-base-cat3"),
+        css.getPropertyValue("--color-base-cat4"),
+        css.getPropertyValue("--color-base-cat5"),
+        css.getPropertyValue("--color-base-cat6")
+      ],
+      hover: [
+        css.getPropertyValue("--color-hover-cat1"),
+        css.getPropertyValue("--color-hover-cat2"),
+        css.getPropertyValue("--color-hover-cat3"),
+        css.getPropertyValue("--color-hover-cat4"),
+        css.getPropertyValue("--color-hover-cat5"),
+        css.getPropertyValue("--color-hover-cat6")
+      ],
+      select: [
+        css.getPropertyValue("--color-select-cat1"),
+        css.getPropertyValue("--color-select-cat2"),
+        css.getPropertyValue("--color-select-cat3"),
+        css.getPropertyValue("--color-select-cat4"),
+        css.getPropertyValue("--color-select-cat5"),
+        css.getPropertyValue("--color-select-cat6")
+      ]
     };
-    if (typeof window.renderUMAP === "function") window.renderUMAP(window.UMAP_STATE);
+    const list = arr[kind] || arr.base;
+    const c = (list[(idx-1) % list.length] || list[0] || "#3b6ed9").trim();
+    return c;
+  }
+
+  function catIndex(rowIdx){
+    if (window.RADQY && typeof window.RADQY.getRowCategoryDetail === "function"){
+      const det = window.RADQY.getRowCategoryDetail(rowIdx);
+      if (det && Number.isFinite(det.cat)) {
+        // table categories are 1-based; convert to 0-based palette index
+        return Math.max(0, det.cat - 1);
+      }
+    }
+    return 0;
+  }
+
+  function selectionSet(){
+    if (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function"){
+      return new Set((window.RADQY.getSelectedRowIndices()||[]).filter(Number.isFinite));
+    }
+    return new Set();
+  }
+
+  function restyleMarkers(hoverIdx){
+    if (!window.Plotly || !window.UMAP_STATE.embedding) return;
+    const emb = window.UMAP_STATE.embedding;
+    const sel = selectionSet();
+    const selectedPoints = new Set(sel);
+    if (hoverIdx >= 0) selectedPoints.add(hoverIdx);
+    const colors = emb.map((p,i)=>{
+      const cat = catIndex(i);
+      if (i === hoverIdx) return palette("hover", cat);
+      if (sel.has(i)) return palette("select", cat);
+      return palette("base", cat);
+    });
+    const sizes = emb.map((p,i)=>{
+      if (i === hoverIdx) return 14;
+      if (sel.has(i)) return 12;
+      return 10;
+    });
+    const widths = emb.map(()=>0);
+    Plotly.restyle(hostId, {
+      "marker.color":[colors],
+      "marker.size":[sizes],
+      "marker.line.width":[widths],
+      "marker.opacity":[1],
+      "selectedpoints":[Array.from(selectedPoints)]
+    });
+  }
+
+  function findRowIndexByCaseName(caseName){
+    if (!caseName) return -1;
+    const rows = (window.DATA && window.DATA.ROWS) || [];
+    const headers = (window.DATA && window.DATA.HEADERS) || [];
+    const pIdx = headers.findIndex(h => /^p#/i.test(String(h)));
+    const partIdx = headers.findIndex(h => /^participant\b/i.test(String(h)));
+    for (let i=0;i<rows.length;i++){
+      const r = rows[i];
+      if (!r) continue;
+      if (pIdx>=0 && String(r[headers[pIdx]]) === caseName) return i;
+      if (partIdx>=0 && String(r[headers[partIdx]]) === caseName) return i;
+      if (caseName.toLowerCase() === (`p${i+1}`).toLowerCase()) return i;
+    }
+    return -1;
+  }
+
+  function caseNameForRow(idx){
+    const rows = (window.DATA && window.DATA.ROWS) || [];
+    const headers = (window.DATA && window.DATA.HEADERS) || [];
+    const row = rows[idx];
+    if (!row) return `P${idx+1}`;
+    const partIdx = headers.findIndex(h => /^participant\b/i.test(String(h)));
+    if (partIdx >= 0 && row[headers[partIdx]] != null) {
+      return String(row[headers[partIdx]]);
+    }
+    const pIdx = headers.findIndex(h => /^p#/i.test(String(h)));
+    if (pIdx >= 0 && row[headers[pIdx]] != null) {
+      return String(row[headers[pIdx]]);
+    }
+    return `P${idx+1}`;
+  }
+
+  function buildTrace(embedding, rows){
+    const sel = selectionSet();
+    const colors = embedding.map((p,i)=>{
+      const cat = catIndex(i);
+      return sel.has(i) ? palette("select", cat) : palette("base", cat);
+    });
+    const sizes = embedding.map((_,i)=> sel.has(i) ? 12 : 10);
+    return {
+      x: embedding.map(p=>p[0]),
+      y: embedding.map(p=>p[1]),
+      mode: "markers",
+      type: "scattergl",
+      text: rows.map((r,idx)=> r && r["P#"] ? r["P#"] : `P${idx+1}`),
+      hoverinfo: "text",
+      marker: {
+        size: sizes,
+        color: colors,
+        opacity: 1,
+        line: {
+          width: embedding.map(()=> 0),
+          color: embedding.map(()=> "transparent")
+        }
+      }
+    };
+  }
+
+  function plotEmbedding(embedding, rows){
+    if (!embedding) return;
+    loadPlotly(()=>{
+      const trace = buildTrace(embedding, rows);
+      const layout = {
+        margin:{l:10,r:10,t:10,b:10},
+        showlegend:false,
+        hovermode:"closest",
+        xaxis:{showgrid:false, zeroline:false, showticklabels:false},
+        yaxis:{showgrid:false, zeroline:false, showticklabels:false},
+        dragmode:"pan"
+      };
+      const cfg = {responsive:true, scrollZoom:true, displaylogo:false};
+      Plotly.react(hostId, [trace], layout, cfg).then(() => {
+        const plot = document.getElementById(hostId);
+        if (!plotReady) {
+          plot.on("plotly_click", ev=>{
+            const pt = ev && ev.points && ev.points[0];
+            if (!pt) return;
+            const idx = pt.pointIndex;
+            const set = selectionSet();
+            if (set.has(idx)) set.delete(idx); else set.add(idx);
+            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
+              window.RADQY.setSelectedRowIndices(Array.from(set));
+            }
+          });
+          plot.on("plotly_hover", ev=>{
+            const pt = ev && ev.points && ev.points[0];
+            if (!pt) return;
+            const idx = pt.pointIndex;
+            restyleMarkers(idx);
+            const txt = caseNameForRow(idx);
+            try{
+              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:txt,on:true,rowIndex:idx}}));
+            }catch(e){}
+            if (typeof window.hoverTableRow === "function") {
+              window.hoverTableRow(txt, true);
+            }
+          });
+          plot.on("plotly_unhover", ev=>{
+            restyleMarkers(-1);
+            const pt = ev && ev.points && ev.points[0];
+            const txt = pt ? caseNameForRow(pt.pointIndex) : null;
+            try{
+              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:txt,on:false,rowIndex: pt?pt.pointIndex:null}}));
+            }catch(e){}
+            if (typeof window.hoverTableRow === "function") {
+              window.hoverTableRow(null, false);
+            }
+          });
+          plotReady = true;
+        }
+        restyleMarkers(-1);
+      });
+    });
+  }
+
+  function computeEmbedding(state){
+    const rows = (window.DATA && window.DATA.ROWS) || [];
+    if (!rows.length) return null;
+    const cols = numericColumns(rows);
+    if (cols.length < 2) return null;
+    const matrix = buildMatrix(rows, cols);
+    let embedding = null;
+    loadUmap(()=>{
+      const distName = (state.distanceFn || "euclidean").toLowerCase();
+      const umap = new UMAP({
+        nComponents: state.nComponents || 2,
+        nNeighbors: Math.max(2, Math.min(matrix.length-1, state.nNeighbors || 15)),
+        minDist: state.minDist || 0.1,
+        spread: state.spread || 1,
+        distanceFn: UMAP[distName] || UMAP.euclidean
+      });
+      embedding = umap.fit(matrix);
+      window.UMAP_STATE.embedding = embedding;
+      plotEmbedding(embedding, rows);
+    });
+    return embedding;
+  }
+
+  window.renderUMAP = function(nextState){
+    if (nextState) window.UMAP_STATE = Object.assign({}, window.UMAP_STATE, nextState);
+    if (nextState && nextState.recompute) {
+      computeEmbedding(window.UMAP_STATE);
+      return;
+    }
+    if (window.UMAP_STATE.embedding) {
+      plotEmbedding(window.UMAP_STATE.embedding, (window.DATA && window.DATA.ROWS) || []);
+    } else {
+      computeEmbedding(window.UMAP_STATE);
+    }
   };
 
-  [elC, elN, elM, elMD, elS].forEach(el => el && el.addEventListener("change", sync));
-  sync();
-}
+  function initControls(){
+    const d = (window.RADQY_CONFIG && window.RADQY_CONFIG.umapDefaults) || {};
+    const elC  = document.getElementById("umap_components");
+    const elN  = document.getElementById("umap_neighbors");
+    const elM  = document.getElementById("umap_metric");
+    const elMD = document.getElementById("umap_mindist");
+    const elS  = document.getElementById("umap_spread");
+    if (elM && d.distanceOptions){
+      elM.innerHTML = d.distanceOptions.map(v => `<option value="${v}">${v}</option>`).join("");
+    }
+    if (elC)  elC.value  = d.nComponents ?? 2;
+    if (elN)  elN.value  = d.nNeighbors  ?? 15;
+    if (elM)  elM.value  = d.distanceFn  ?? "Euclidean";
+    if (elMD) elMD.value = d.minDist     ?? 0.1;
+    if (elS)  elS.value  = d.spread      ?? 1;
+    const sync = () => {
+      window.renderUMAP({
+        nComponents: Number(elC.value),
+        nNeighbors:  Number(elN.value),
+        distanceFn:  elM.value,
+        minDist:     Number(elMD.value),
+        spread:      Number(elS.value),
+        recompute:   true
+      });
+    };
+    [elC, elN, elM, elMD, elS].forEach(el => el && el.addEventListener("change", sync));
+    sync();
+  }
 
-document.addEventListener("DOMContentLoaded", initUmapControls);
+  document.addEventListener("DOMContentLoaded", initControls);
+  document.addEventListener("radqy:data:ready", ()=> window.renderUMAP({recompute:true}));
+  document.addEventListener("radqy:data:updated", ()=> window.renderUMAP({recompute:true}));
+  document.addEventListener("radqy:view:columns", ()=> window.renderUMAP({recompute:true}));
+  document.addEventListener("radqy:colorby:changed", ()=> window.renderUMAP());
+  document.addEventListener("radqy:selection-changed", ()=> restyleMarkers(-1));
+
+  // Hover sync inbound: highlight corresponding point
+  document.addEventListener("radqy:hover:change", function(e){
+    const det = e && e.detail ? e.detail : {};
+    const caseName = det.caseName != null ? String(det.caseName) : null;
+    const on = !!det.on;
+    if (!window.Plotly || !window.UMAP_STATE.embedding) return;
+    const idx = on ? findRowIndexByCaseName(caseName) : -1;
+    restyleMarkers(idx);
+    if (typeof window.hoverTableRow === "function") {
+      window.hoverTableRow(caseName, on);
+    }
+  });
+})();
