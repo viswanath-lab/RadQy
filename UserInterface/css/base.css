@@ -145,7 +145,7 @@ html,body{
 /* card style for each panel */
 .panel{
   position:relative;
-  border:1px solid var(--color-border);   /* opx remove the panel borders */
+  border:0px solid var(--color-border);   /* opx remove the panel borders */
   border-radius:var(--radius-lg);
   padding:12px 12px 5px;
   background:#fff;

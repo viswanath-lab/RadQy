@@ -207,6 +207,17 @@ function inferCategoricalHeaders(dataset){if(!dataset.length)return[];const allo
 function catIdxForValue(v,domain){const i=domain.indexOf(v);return Math.max(0,i);}
 Bar._inferNumeric=inferNumericHeaders;Bar._inferCategorical=inferCategoricalHeaders;
 
+function currentSelectionSet(){
+  if (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function") {
+    const arr = window.RADQY.getSelectedRowIndices() || [];
+    return new Set(arr.filter(v => Number.isFinite(v)));
+  }
+  if (window.RADQY && Array.isArray(window.RADQY._selectedIndices)) {
+    return new Set(window.RADQY._selectedIndices.filter(v => Number.isFinite(v)));
+  }
+  return new Set();
+}
+
 Bar.render=function(svgG,width,height,margin,externalDataset,metric,chartState,getPLabel,onSelect){
 const ds=externalDataset&&externalDataset.length?externalDataset:getMergedDataset();
 setDefaultMetric(ds);
@@ -235,17 +246,6 @@ const colorDetailForRow=function(idx){
   }
   return{cat:1,value:null,header:null};
 };
-
-function currentSelectionSet(){
-  if (window.RADQY && typeof window.RADQY.getSelectedRowIndices === "function") {
-    const arr = window.RADQY.getSelectedRowIndices() || [];
-    return new Set(arr.filter(v => Number.isFinite(v)));
-  }
-  if (window.RADQY && Array.isArray(window.RADQY._selectedIndices)) {
-    return new Set(window.RADQY._selectedIndices.filter(v => Number.isFinite(v)));
-  }
-  return new Set();
-}
 
 base.forEach(function(d){
   const det=colorDetailForRow(d._idx);
@@ -304,6 +304,14 @@ document.addEventListener("radqy:hover:change", function(e){
   svg.selectAll('rect.bar').classed('bar-hover-target',function(d){
     return d&&String(d.case_name)===caseName;
   });
+});
+
+// Sync bar selection with table/other panels
+document.addEventListener("radqy:selection-changed", function(){
+  if(!_state.last||!_state.last.svgG)return;
+  const set = currentSelectionSet();
+  _state.last.svgG.selectAll('rect.bar')
+    .classed('selected-bar', function(d){ return set.has(d._idx); });
 });
 
 // Sync with table sorting: update bar sort when table headers are sorted
