@@ -16,6 +16,19 @@
     }
   }
 
+  // allow external sort requests (e.g., from BAR sort dropdown)
+  document.addEventListener("radqy:sort:change", function(e){
+    var det = e && e.detail ? e.detail : {};
+    var col = det.col;
+    var asc = (det.ascending === undefined) ? true : !!det.ascending;
+    if (!col) return;
+    var idx = TABLE_STATE.headers ? TABLE_STATE.headers.indexOf(col) : -1;
+    if (idx < 0) return;
+    TABLE_SORT.colIndex = idx;
+    TABLE_SORT.ascending = asc;
+    sortRowsByColumn(idx);
+  });
+
   function getCaseNameForRow(rowIdx) {
     const headers = TABLE_STATE.headers || [];
     const rows = TABLE_STATE.rows || [];

@@ -35,6 +35,14 @@ window.updateBarLegendVisibility = function(){};
 window.fillTableLegend = function(){};
 window.updateBarLegend = function(){};
 
+function emitSortChange(col, ascending){
+  try{
+    document.dispatchEvent(new CustomEvent("radqy:sort:change",{
+      detail:{ col: col, ascending: ascending }
+    }));
+  }catch(e){}
+}
+
 function setDefaultMetric(dataset){
   if(!window.CHART_STATE) window.CHART_STATE = {};
   var cfg = (window.RADQY_CONFIG && window.RADQY_CONFIG.chartDefaults) ? window.RADQY_CONFIG.chartDefaults : {};
@@ -67,7 +75,51 @@ function setDefaultMetric(dataset){
 
 window.updateBarSortVisibility=function(){const el=document.getElementById('bar-sort-wrap');if(!el)return;el.style.display=(window.CHART_STATE?.visType==='bar_chart')?'':'none';};
 
-window.refreshBarSortOptions=function(){const btn=document.getElementById('bar-sort-select');const menu=btn?btn.nextElementSibling:null;const dirBtn=document.getElementById('bar-sort-order');if(!btn||!menu||!dirBtn)return;const ds=(window.radqyMergedDataset?window.radqyMergedDataset():[]);setDefaultMetric(ds);const numericCols=(window.radqyInferNumericColumns?window.radqyInferNumericColumns(ds):[]);const catItems=(window.getCategoricalHeaders?window.getCategoricalHeaders():[]).map(o=>o.header);const items=[];items.push({label:'P#',value:'P#',cls:'radqy-opt--part'});numericCols.forEach(c=>{var t=headerType(c);let cls='radqy-opt--num';if(t==='tag')cls='radqy-opt--tag';else if(t==='iqms')cls='radqy-opt--iqms';else if(t==='ext')cls='radqy-opt--ext';else if(t==='aux')cls='radqy-opt--aux';items.push({label:c,value:c,cls});});catItems.forEach(c=>{let cls='radqy-opt--cat';var t=headerType(c);if(t==='tag')cls='radqy-opt--tag';else if(t==='iqms')cls='radqy-opt--iqms';else if(t==='ext')cls='radqy-opt--ext';else if(t==='aux')cls='radqy-opt--aux';items.push({label:c,value:c,cls});});const current=window.CHART_STATE.sortBy||'P#';btn.textContent=current;menu.innerHTML='';let currentCls=null;items.forEach(it=>{const opt=document.createElement('div');opt.className=`radqy-select__opt ${it.cls}`;opt.setAttribute('data-value',it.value);opt.textContent=it.label;if(it.value===current){opt.setAttribute('aria-selected','true');currentCls=it.cls;}opt.addEventListener('click',()=>{window.CHART_STATE.sortBy=it.value;btn.textContent=it.label;applyBtnType(btn,it.cls);menu.parentElement.classList.remove('is-open');if(typeof window.renderChartsView==='function')window.renderChartsView();});menu.appendChild(opt);});applyBtnType(btn,currentCls||'radqy-opt--part');if(typeof window.CHART_STATE.sortAsc!=='boolean')window.CHART_STATE.sortAsc=false;renderSortIcon(dirBtn,window.CHART_STATE.sortAsc);btn.onclick=function(){btn.parentElement.classList.toggle('is-open');};document.addEventListener('click',function(e){if(!btn.parentNode.contains(e.target))btn.parentElement.classList.remove('is-open');},{capture:true});dirBtn.onclick=function(){window.CHART_STATE.sortAsc=!window.CHART_STATE.sortAsc;renderSortIcon(dirBtn,window.CHART_STATE.sortAsc);if(typeof window.renderChartsView==='function')window.renderChartsView();};};
+window.refreshBarSortOptions=function(){
+  const btn=document.getElementById('bar-sort-select');
+  const menu=btn?btn.nextElementSibling:null;
+  const dirBtn=document.getElementById('bar-sort-order');
+  if(!btn||!menu||!dirBtn)return;
+  const ds=(window.radqyMergedDataset?window.radqyMergedDataset():[]);
+  setDefaultMetric(ds);
+  const numericCols=(window.radqyInferNumericColumns?window.radqyInferNumericColumns(ds):[]);
+  const catItems=(window.getCategoricalHeaders?window.getCategoricalHeaders():[]).map(o=>o.header);
+  const items=[];
+  items.push({label:'P#',value:'P#',cls:'radqy-opt--part'});
+  numericCols.forEach(c=>{var t=headerType(c);let cls='radqy-opt--num';if(t==='tag')cls='radqy-opt--tag';else if(t==='iqms')cls='radqy-opt--iqms';else if(t==='ext')cls='radqy-opt--ext';else if(t==='aux')cls='radqy-opt--aux';items.push({label:c,value:c,cls});});
+  catItems.forEach(c=>{let cls='radqy-opt--cat';var t=headerType(c);if(t==='tag')cls='radqy-opt--tag';else if(t==='iqms')cls='radqy-opt--iqms';else if(t==='ext')cls='radqy-opt--ext';else if(t==='aux')cls='radqy-opt--aux';items.push({label:c,value:c,cls});});
+  const current=window.CHART_STATE.sortBy||'P#';
+  btn.textContent=current;
+  menu.innerHTML='';
+  let currentCls=null;
+  items.forEach(it=>{
+    const opt=document.createElement('div');
+    opt.className=`radqy-select__opt ${it.cls}`;
+    opt.setAttribute('data-value',it.value);
+    opt.textContent=it.label;
+    if(it.value===current){opt.setAttribute('aria-selected','true');currentCls=it.cls;}
+    opt.addEventListener('click',()=>{
+      window.CHART_STATE.sortBy=it.value;
+      btn.textContent=it.label;
+      applyBtnType(btn,it.cls);
+      menu.parentElement.classList.remove('is-open');
+      emitSortChange(it.value,window.CHART_STATE.sortAsc);
+      if(typeof window.renderChartsView==='function')window.renderChartsView();
+    });
+    menu.appendChild(opt);
+  });
+  applyBtnType(btn,currentCls||'radqy-opt--part');
+  if(typeof window.CHART_STATE.sortAsc!=='boolean')window.CHART_STATE.sortAsc=false;
+  renderSortIcon(dirBtn,window.CHART_STATE.sortAsc);
+  btn.onclick=function(){btn.parentElement.classList.toggle('is-open');};
+  document.addEventListener('click',function(e){if(!btn.parentNode.contains(e.target))btn.parentElement.classList.remove('is-open');},{capture:true});
+  dirBtn.onclick=function(){
+    window.CHART_STATE.sortAsc=!window.CHART_STATE.sortAsc;
+    renderSortIcon(dirBtn,window.CHART_STATE.sortAsc);
+    emitSortChange(window.CHART_STATE.sortBy,window.CHART_STATE.sortAsc);
+    if(typeof window.renderChartsView==='function')window.renderChartsView();
+  };
+};
 
 function renderSortIcon(el,asc){
   if(!el) return;
@@ -252,5 +304,21 @@ document.addEventListener("radqy:hover:change", function(e){
   svg.selectAll('rect.bar').classed('bar-hover-target',function(d){
     return d&&String(d.case_name)===caseName;
   });
+});
+
+// Sync with table sorting: update bar sort when table headers are sorted
+document.addEventListener("radqy:table:sorted", function(e){
+  const det=e && e.detail ? e.detail : {};
+  const col=det.col;
+  const asc=!!det.ascending;
+  const btn=document.getElementById('bar-sort-select');
+  const dirBtn=document.getElementById('bar-sort-order');
+  if (col) {
+    window.CHART_STATE.sortBy = col;
+    window.CHART_STATE.sortAsc = asc;
+    if (btn) btn.textContent = col;
+    if (dirBtn) renderSortIcon(dirBtn, asc);
+    if (typeof window.renderChartsView === 'function') window.renderChartsView();
+  }
 });
 })(window);
