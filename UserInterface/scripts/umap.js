@@ -592,12 +592,19 @@
     const host = ensureLabelMenu();
     if (!btn || !host) return;
 
+    const closeMenu = ()=>{
+      host.classList.remove("is-open");
+      btn.blur();
+    };
+
     btn.addEventListener("click", ev=>{
       ev.stopPropagation();
+      document.dispatchEvent(new CustomEvent("radqy:menu:closeall", { detail: { source: "umap-label" } }));
       host.classList.toggle("is-open");
     });
     host.addEventListener("click", ev=> ev.stopPropagation());
-    document.addEventListener("click", ()=> host.classList.remove("is-open"));
+    document.addEventListener("click", closeMenu, true);
+    document.addEventListener("radqy:menu:closeall", closeMenu);
   }
 
   function toggleLabelByVisibility(){

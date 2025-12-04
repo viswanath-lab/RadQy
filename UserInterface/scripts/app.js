@@ -212,6 +212,11 @@ RADQY.applyVisibility = function () {
   document.dispatchEvent(new CustomEvent("radqy:panel-visibility-changed", {
     detail: { visibility: { ...RADQY._vis } }
   }));
+
+  // If chart panel just became visible, ensure it rerenders at full size
+  if (RADQY._vis.chart && typeof window.renderChartsView === "function") {
+    window.renderChartsView();
+  }
 };
 
 // ===============================

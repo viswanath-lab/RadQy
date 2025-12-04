@@ -1725,6 +1725,7 @@ function bindToolbar() {
     const addM     = document.getElementById("add-menu");
     const metricsM = document.getElementById("sb-metrics-menu");
     const colorM   = document.getElementById("color-menu");
+    document.dispatchEvent(new CustomEvent("radqy:menu:closeall", { detail: { source: "table-menus" } }));
 
     if (addM)     addM.classList.remove("is-open");
     if (metricsM) metricsM.classList.remove("is-open");
