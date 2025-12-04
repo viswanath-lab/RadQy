@@ -1161,6 +1161,43 @@
     }));
   }
 
+  // Add an AUX column from explicit values (length must equal rows)
+  window.RADQY.addAuxColumnFromValues = function (baseName, values) {
+    if (!TABLE_STATE.headers.length) return null;
+    const rows = TABLE_STATE.rows;
+    if (!Array.isArray(values) || values.length !== rows.length) return null;
+
+    const headers = TABLE_STATE.headers;
+    const meta    = ensureMetaLists();
+    const insertIdx = 2; // after PID column
+
+    const base = (baseName && String(baseName).trim()) || "Column";
+    let name = base;
+    let k = 2;
+    while (headers.includes(name)) {
+      name = base + " " + k;
+      k += 1;
+    }
+
+    headers.splice(insertIdx, 0, name);
+
+    rows.forEach((r, idx) => {
+      r[name] = values[idx];
+    });
+
+    const low = name.toLowerCase();
+    if (!meta.auxs.includes(low)) meta.auxs.push(low);
+
+    renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(headers, rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "add_column", name, skipUMAP: true }
+    }));
+
+    return name;
+  };
+
   // Expose a helper to add an AUX column populated from the current selection
   window.RADQY.addSelectionAuxColumn = function (name, selectedIdxs, labels) {
     if (!TABLE_STATE.headers.length) return null;

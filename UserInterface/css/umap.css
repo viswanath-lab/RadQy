@@ -61,8 +61,8 @@
 }
 
 #umap-label-menu{
-  min-width: 160px !important;
-  width: 180px !important;
+  min-width: 0;
+  width: auto;
   background:#ffffff;
   border:1px solid var(--color-border);
   border-radius:6px;
@@ -74,7 +74,7 @@
 }
 #umap-label-menu .menu-item{
   width:100%;
-  padding:6px 12px;
+  padding:4px 6px;
   font-size:10px;
   text-align:left;
   background:#ffffff;
@@ -156,6 +156,12 @@
 /* #panelumap .ctrlsm[type="number"] { -moz-appearance: textfield; }
 #panelumap .ctrlsm[type="number"]:focus { -moz-appearance: number-input; } */
 
+#umap-plotwrap{
+  flex:1 1 auto;
+  display:flex;
+  gap:1px;
+  align-items:stretch;
+}
 #umaphost{
   flex:1 1 auto;
   min-height:260px;
@@ -170,32 +176,46 @@
   overflow:hidden !important;
 }
 
-/* Vertical modebar aligned to the right of the plot */
-#umaphost .modebar-container{
-  inset:0;
-  pointer-events:none;
-}
-#umaphost .modebar{
-  position:absolute;
-  top:10px;
-  right:10px;
+/* Dedicated rail for the Plotly modebar, to the right of the plot */
+#umap-modebar-rail{
+  flex:0 0 30px;
   display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:6px;
-  padding:6px;
+  align-items:center;
+  justify-content:center;
+  background:#f8fafc;
+  border:1px solid var(--color-border);
   border-radius:var(--radius-md);
-  background:rgba(255,255,255,0.9);
   box-shadow:var(--shadow-1);
-  pointer-events:auto;
+  padding:8px 0;
+  min-height:260px;
 }
-#umaphost .modebar-group{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
+
+#umap-modebar-rail .modebar-container{
+  position:static !important;
+  inset:auto !important;
+  transform:none !important;
+  width:auto !important;
+  height:auto !important;
+  pointer-events:auto !important;
 }
-#umaphost .modebar-btn{
-  margin:0;
+#umap-modebar-rail .modebar{
+  position:static !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  gap:8px !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+#umap-modebar-rail .modebar-group{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:8px !important;
+  width:100%;
+  justify-content:center;
+}
+#umap-modebar-rail .modebar-btn{
+  margin:0 !important;
 }
 
 .label-dialog-title{
@@ -246,6 +266,28 @@
   z-index:15000;
 }
 #label-dialog{
+  background:#fff;
+  border:1px solid var(--color-border);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
+  padding:16px;
+  min-width:260px;
+}
+
+/* Reuse styles for cohort dialog */
+#cohort-dialog-overlay{
+  position:fixed;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.25);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:15000;
+}
+#cohort-dialog{
   background:#fff;
   border:1px solid var(--color-border);
   border-radius:10px;

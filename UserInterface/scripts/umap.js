@@ -21,6 +21,33 @@
   let labelDialog = null;
   let labelDialogResolver = null;
   let restyleLock = false;
+  let cohortShapes = [];
+
+  function moveModebarToRail(){
+    const rail = document.getElementById("umap-modebar-rail");
+    const plot = document.getElementById(hostId);
+    if (!rail || !plot) return;
+    const modebar = plot.querySelector(".modebar-container");
+    if (modebar && modebar.parentNode !== rail) {
+      rail.innerHTML = "";
+      rail.appendChild(modebar);
+    }
+  }
+
+  function clearCohortShapes(){
+    if (!cohortShapes.length) return;
+    cohortShapes = [];
+    Plotly.relayout(hostId, { shapes: currentShapes() });
+  }
+
+  function clickOutsideColorBy(ev){
+    const target = ev.target;
+    const isInColorBtn = document.getElementById("chartColor")?.contains(target);
+    const isInColorMenu = document.getElementById("color-menu")?.contains(target);
+    const isInModebar = document.getElementById("umap-modebar-rail")?.contains(target);
+    if (isInColorBtn || isInColorMenu || isInModebar) return;
+    clearCohortShapes();
+  }
 
   function loadPlotly(cb){
     if (window.Plotly) return cb();
@@ -237,6 +264,199 @@
     selectionShape = shape;
   }
 
+  function currentShapes(){
+    const shapes = [];
+    if (cohortShapes.length) shapes.push(...cohortShapes);
+    if (selectionShape) shapes.push(selectionShape);
+    return shapes;
+  }
+
+  function computeConvexHull(points){
+    if (points.length <= 2) return points.slice();
+    const pts = points.slice().sort((a,b)=> a.x === b.x ? a.y - b.y : a.x - b.x);
+    const cross = (o,a,b)=> (a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+    const lower = [];
+    for (const p of pts){
+      while (lower.length >=2 && cross(lower[lower.length-2], lower[lower.length-1], p) <=0) lower.pop();
+      lower.push(p);
+    }
+    const upper = [];
+    for (let i=pts.length-1;i>=0;i--){
+      const p = pts[i];
+      while (upper.length >=2 && cross(upper[upper.length-2], upper[upper.length-1], p) <=0) upper.pop();
+      upper.push(p);
+    }
+    upper.pop(); lower.pop();
+    return lower.concat(upper);
+  }
+
+  function hullPath(points){
+    if (!points.length) return null;
+    const cx = points.reduce((s,p)=>s+p.x,0)/points.length;
+    const cy = points.reduce((s,p)=>s+p.y,0)/points.length;
+    const xs = points.map(p=>p.x);
+    const ys = points.map(p=>p.y);
+    const spanX = (Math.max(...xs) - Math.min(...xs)) || 1;
+    const spanY = (Math.max(...ys) - Math.min(...ys)) || 1;
+    const span = Math.max(spanX, spanY);
+    const pad = 0.15; // breathing room
+    // Use circumscribed ellipse (sqrt(2) factor) so all points in bbox are inside
+    const rx = (spanX/2) * Math.SQRT2 * (1 + pad) + span * 0.1;
+    const ry = (spanY/2) * Math.SQRT2 * (1 + pad) + span * 0.1;
+    const steps = 72;
+    let path = "";
+    for (let i=0;i<=steps;i++){
+      const t = (i/steps) * Math.PI * 2;
+      const x = cx + rx * Math.cos(t);
+      const y = cy + ry * Math.sin(t);
+      if (i===0) path += `M ${x},${y}`;
+      else path += ` L ${x},${y}`;
+    }
+    path += " Z";
+    return path;
+  }
+
+  function kmeans(emb, k, maxIter=50){
+    if (!emb || !emb.length || k < 2) return null;
+    k = Math.min(k, emb.length);
+    const points = emb.map(p=>({x:p[0], y:p[1]}));
+    const centers = [];
+    const used = new Set();
+    while (centers.length < k){
+      const idx = Math.floor(Math.random()*points.length);
+      if (!used.has(idx)){
+        used.add(idx);
+        centers.push({ ...points[idx] });
+      }
+    }
+    let labels = new Array(points.length).fill(0);
+    for (let iter=0; iter<maxIter; iter++){
+      // assign
+      let changed = false;
+      for (let i=0;i<points.length;i++){
+        let best = 0;
+        let bestd = Infinity;
+        for (let c=0;c<centers.length;c++){
+          const dx = points[i].x - centers[c].x;
+          const dy = points[i].y - centers[c].y;
+          const d = dx*dx + dy*dy;
+          if (d < bestd){
+            bestd = d; best = c;
+          }
+        }
+        if (labels[i] !== best) {
+          labels[i] = best;
+          changed = true;
+        }
+      }
+      // update
+      const sums = centers.map(()=>({x:0,y:0,c:0}));
+      for (let i=0;i<points.length;i++){
+        const l = labels[i];
+        sums[l].x += points[i].x;
+        sums[l].y += points[i].y;
+        sums[l].c += 1;
+      }
+      for (let c=0;c<centers.length;c++){
+        if (sums[c].c){
+          centers[c].x = sums[c].x / sums[c].c;
+          centers[c].y = sums[c].y / sums[c].c;
+        }
+      }
+      if (!changed) break;
+    }
+    return labels;
+  }
+
+  async function runCohortFinder(k, trainPct){
+    const emb = window.UMAP_STATE && window.UMAP_STATE.embedding;
+    if (!emb || !emb.length) {
+      alert("Run UMAP first before Cohort Finder.");
+      return;
+    }
+    const n = emb.length;
+    if (!Number.isFinite(k) || k < 2 || k > n) {
+      alert("Invalid k for Cohort Finder.");
+      return;
+    }
+    const labelsIdx = kmeans(emb, k);
+    if (!labelsIdx) return;
+    const rows = (window.DATA && window.DATA.ROWS) || [];
+    const clusterLabels = labelsIdx.map(i=> `Cluster ${i+1}`);
+    const orderedCats = Array.from({length: k}, (_,i)=> `Cluster ${i+1}`);
+
+    // Train/Test split per cluster
+    const split = new Array(n).fill("Train");
+    if (trainPct != null && Number.isFinite(trainPct)) {
+      const p = Math.max(0, Math.min(100, trainPct)) / 100;
+      const clusters = {};
+      labelsIdx.forEach((c, idx)=>{
+        if (!clusters[c]) clusters[c] = [];
+        clusters[c].push(idx);
+      });
+      Object.values(clusters).forEach(list=>{
+        const shuffled = list.slice().sort(()=> Math.random()-0.5);
+        const trainCount = Math.max(0, Math.min(shuffled.length, Math.round(shuffled.length * p)));
+        for (let i=trainCount;i<shuffled.length;i++){
+          split[shuffled[i]] = "Test";
+        }
+      });
+    }
+
+    // Add AUX columns
+    const cfName = window.RADQY && window.RADQY.addAuxColumnFromValues
+      ? window.RADQY.addAuxColumnFromValues("CohortCluster", clusterLabels)
+      : null;
+    const splitName = (window.RADQY && window.RADQY.addAuxColumnFromValues)
+      ? window.RADQY.addAuxColumnFromValues("CohortSplit", split)
+      : null;
+
+    // Build hulls after color mapping is set
+    const normFn = (typeof window.normalizeCategoryValue === "function")
+      ? window.normalizeCategoryValue
+      : (_h, v) => (v == null ? "NA" : String(v));
+    const catMap = new Map(
+      orderedCats.map((v, i) => [normFn("CohortCluster", v), ((i % 5) + 2)])
+    );
+
+    cohortShapes = [];
+    for (let c=0;c<k;c++){
+      const pts = [];
+      labelsIdx.forEach((lab, idx)=>{
+        if (lab === c) pts.push({x: emb[idx][0], y: emb[idx][1]});
+      });
+      if (pts.length >= 3){
+        const hull = computeConvexHull(pts);
+        const path = hullPath(hull);
+        if (path){
+          const sampleIdx = labelsIdx.findIndex(l => l === c);
+          const lbl = sampleIdx >= 0 ? clusterLabels[sampleIdx] : `Cluster ${c+1}`;
+          const cat = catMap.get(normFn("CohortCluster", lbl)) || 1;
+          const color = palette("base", cat);
+          cohortShapes.push({
+            type: "path",
+            path,
+            xref: "x",
+            yref: "y",
+            line: { color, width: 2 },
+            fillcolor: "rgba(0,0,0,0)" // no fill, outline only
+          });
+        }
+      }
+    }
+    Plotly.relayout(hostId, { shapes: currentShapes() });
+
+    if (cfName && window.RADQY && window.RADQY.applyColorBy) {
+      const vals = orderedCats.length
+        ? orderedCats
+        : Array.from(new Set(clusterLabels.filter(v=>v!=null && v!=="")));
+      window.RADQY.applyColorBy(cfName, vals);
+    }
+    labelByCurrent = cfName || labelByCurrent;
+    if (cfName) updateLabelByIndexFromName(cfName);
+    buildLabelMenu();
+  }
+
   function plotEmbedding(embedding, rows){
     if (!embedding) return;
     loadPlotly(()=>{
@@ -253,7 +473,7 @@
         xaxis:{showgrid:false, zeroline:false, showticklabels:false},
         yaxis:{showgrid:false, zeroline:false, showticklabels:false},
         dragmode:"lasso",
-        shapes: selectionShape ? [selectionShape] : []
+        shapes: currentShapes()
       };
       const cfg = {
         responsive:true,
@@ -261,9 +481,11 @@
         displaylogo:false,
         modeBarButtonsToAdd:[],
         modeBarButtonsToRemove:[],
-        displayModeBar:true
+        displayModeBar:true,
+        modeBarPosition:"topright"
       };
       Plotly.react(hostId, [trace], layout, cfg).then(() => {
+        moveModebarToRail();
         const plot = document.getElementById(hostId);
         if (!plotReady) {
           // Lasso/box selection: live selection coloring while drawing
@@ -291,7 +513,7 @@
             selectedPoints = idxs;
             setSelectionShape(ev);
             Plotly.restyle(hostId, { selectedpoints: [selectedPoints] });
-            Plotly.relayout(hostId, { shapes: selectionShape ? [selectionShape] : [] });
+            Plotly.relayout(hostId, { shapes: currentShapes() });
             restyleMarkers(-1);
             try{
               document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
@@ -307,7 +529,7 @@
             selectedPoints = [];
             selectionShape = null;
             Plotly.restyle(hostId, { selectedpoints: [[]] });
-            Plotly.relayout(hostId, { shapes: [] });
+            Plotly.relayout(hostId, { shapes: currentShapes() });
             restyleMarkers(-1);
             try{
               document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
@@ -350,6 +572,23 @@
               window.hoverTableRow(null, false);
             }
           });
+          // Home (auto-range) should clear selection + cohort outlines without recomputing embedding
+          plot.on("plotly_relayout", ev=>{
+            const isHome =
+              ev &&
+              (ev["xaxis.autorange"] === true || ev["yaxis.autorange"] === true || ev["scene.autorange"] === true);
+            if (!isHome) return;
+            selectionShape = null;
+            cohortShapes = [];
+            selectedPoints = [];
+            selectionSet().clear?.();
+            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
+              window.RADQY.setSelectedRowIndices([]);
+            }
+            Plotly.restyle(hostId, { selectedpoints: [[null]] });
+            Plotly.relayout(hostId, { shapes: [], selections: [] });
+            restyleMarkers(-1);
+          });
           plotReady = true;
         }
         restyleMarkers(-1);
@@ -362,6 +601,21 @@
     const btn = document.getElementById("umapLabelBtn");
     const host = document.getElementById("umap-label-menu");
     if (!btn || !host) return null;
+
+    // Match menu width and position to the button so it lines up like Color by
+    const w = btn.offsetWidth;
+    if (w && Number.isFinite(w)) {
+      host.style.minWidth = `${w}px`;
+      host.style.width = `${w}px`;
+    }
+    const left = btn.offsetLeft;
+    if (Number.isFinite(left)) {
+      host.style.left = `${left}px`;
+    }
+    const top = btn.offsetTop + btn.offsetHeight;
+    if (Number.isFinite(top)) {
+      host.style.top = `${top}px`;
+    }
     return host;
   }
 
@@ -405,6 +659,27 @@
       return window.RADQY.addEmptyAuxColumn();
     }
     return null;
+  }
+
+  function headersNow(){
+    return (window.DATA && window.DATA.HEADERS) || [];
+  }
+
+  function updateLabelByIndexFromName(name){
+    const headers = headersNow();
+    const idx = headers.indexOf(name);
+    labelByIndex = idx >= 0 ? idx : null;
+  }
+
+  function refreshLabelByFromIndex(){
+    if (labelByIndex == null) return;
+    const headers = headersNow();
+    if (headers[labelByIndex]) {
+      labelByCurrent = headers[labelByIndex];
+    } else if (labelByCurrent && !headers.includes(labelByCurrent)) {
+      labelByCurrent = "";
+      labelByIndex = null;
+    }
   }
 
   function headersNow(){
@@ -517,6 +792,105 @@
     });
   }
 
+  // ---------- Cohort Finder dialog ----------
+  function ensureCohortDialog(){
+    let overlay = document.getElementById("cohort-dialog-overlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "cohort-dialog-overlay";
+    overlay.className = "label-dialog-overlay";
+    const box = document.createElement("div");
+    box.id = "cohort-dialog";
+    box.className = "label-dialog";
+    const title = document.createElement("div");
+    title.className = "label-dialog-title";
+    title.textContent = "Cohort Finder";
+
+    const form = document.createElement("div");
+    form.className = "label-dialog-form";
+
+    const kLabel = document.createElement("label");
+    kLabel.textContent = "Number of clusters (k) – min 2";
+    const kInput = document.createElement("input");
+    kInput.type = "number";
+    kInput.min = "2";
+    kInput.value = "3";
+    kInput.placeholder = "Minimum 2";
+    kInput.id = "cohort-k";
+    kInput.name = "cohort-k";
+    kInput.setAttribute("aria-label", "Number of clusters");
+    kLabel.setAttribute("for", kInput.id);
+
+    const splitLabel = document.createElement("label");
+    splitLabel.textContent = "Train split (%)";
+    const splitInput = document.createElement("input");
+    splitInput.type = "number";
+    splitInput.min = "0";
+    splitInput.max = "100";
+    splitInput.value = "80";
+    splitInput.id = "cohort-train";
+    splitInput.name = "cohort-train";
+    splitInput.setAttribute("aria-label", "Train split percent");
+    splitLabel.setAttribute("for", splitInput.id);
+
+    const actions = document.createElement("div");
+    actions.className = "label-dialog-actions";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn btnsm";
+    cancelBtn.textContent = "Cancel";
+    const okBtn = document.createElement("button");
+    okBtn.type = "button";
+    okBtn.className = "btn btnsm btnon";
+    okBtn.textContent = "Run";
+
+    [kInput, splitInput].forEach(inp=>{
+      inp.addEventListener("keydown", (e)=>{
+        if (e.key === "Enter") {
+          e.preventDefault();
+          okBtn.click();
+        }
+      });
+    });
+
+    form.appendChild(kLabel);
+    form.appendChild(kInput);
+    form.appendChild(splitLabel);
+    form.appendChild(splitInput);
+    actions.appendChild(cancelBtn);
+    actions.appendChild(okBtn);
+    box.appendChild(title);
+    box.appendChild(form);
+    box.appendChild(actions);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    cancelBtn.addEventListener("click", ()=>{
+      overlay.style.display = "none";
+      if (labelDialogResolver) labelDialogResolver(null);
+    });
+    okBtn.addEventListener("click", ()=>{
+      overlay.style.display = "none";
+      const k = Number(kInput.value);
+      const trainPct = Number(splitInput.value);
+      if (labelDialogResolver) labelDialogResolver({k, trainPct});
+    });
+
+    return overlay;
+  }
+
+  function openCohortDialog(){
+    const overlay = ensureCohortDialog();
+    if (!overlay) return Promise.resolve(null);
+    overlay.style.display = "flex";
+    const kInput = overlay.querySelector("#cohort-k");
+    const splitInput = overlay.querySelector("#cohort-train");
+    if (kInput) kInput.focus();
+    return new Promise(resolve => {
+      labelDialogResolver = resolve;
+    });
+  }
+
   function buildLabelMenu(){
     const btn = document.getElementById("umapLabelBtn");
     const host = ensureLabelMenu();
@@ -524,6 +898,7 @@
     host.innerHTML = "";
 
     const aux = auxColumns();
+    refreshLabelByFromIndex();
     refreshLabelByFromIndex();
 
     // Reset button text if current selection is gone
@@ -537,7 +912,7 @@
     const newItem = document.createElement("button");
     newItem.type = "button";
     newItem.className = "menu-item";
-    newItem.textContent = "+ New Column";
+    newItem.textContent = "+ New";
     newItem.addEventListener("click", async ()=>{
       host.classList.remove("is-open");
       const labels = await openLabelDialog({ selected: "Selected", unselected: "Unselected" });
@@ -599,6 +974,7 @@
 
     btn.addEventListener("click", ev=>{
       ev.stopPropagation();
+      ensureLabelMenu(); // refresh width/position if layout changed
       document.dispatchEvent(new CustomEvent("radqy:menu:closeall", { detail: { source: "umap-label" } }));
       host.classList.toggle("is-open");
     });
@@ -695,19 +1071,32 @@
     selectedPoints = Array.from(selectionSet());
     restyleMarkers(-1);
     toggleLabelByVisibility();
+    moveModebarToRail();
   });
   document.addEventListener("DOMContentLoaded", ()=>{
     buildLabelMenu();
     bindLabelMenu();
     toggleLabelByVisibility();
+    document.addEventListener("click", clickOutsideColorBy, true);
+    const cfBtn = document.getElementById("btnCohortFinder");
+    if (cfBtn) {
+      cfBtn.addEventListener("click", async ()=>{
+        const dlg = await openCohortDialog();
+        if (!dlg) return;
+        await runCohortFinder(dlg.k, dlg.trainPct);
+      });
+    }
+    moveModebarToRail();
   });
   document.addEventListener("radqy:data:updated", ()=>{
     buildLabelMenu();
     toggleLabelByVisibility();
+    moveModebarToRail();
   });
   document.addEventListener("radqy:table:updated", ()=>{
     buildLabelMenu();
     toggleLabelByVisibility();
+    moveModebarToRail();
   });
 
   // Hover sync inbound: highlight corresponding point

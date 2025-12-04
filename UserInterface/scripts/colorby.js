@@ -119,6 +119,21 @@
       btn.parentNode.style.position = "relative";
       btn.parentNode.appendChild(host);
     }
+    // Match menu width to the button
+    const w = btn.offsetWidth;
+    if (w && Number.isFinite(w)) {
+      host.style.minWidth = `${w}px`;
+      host.style.width = `${w}px`;
+    }
+    // Align the dropdown to the left edge of the button (not the label)
+    const left = btn.offsetLeft;
+    if (Number.isFinite(left)) {
+      host.style.left = `${left}px`;
+    }
+    const top = btn.offsetTop + btn.offsetHeight;
+    if (Number.isFinite(top)) {
+      host.style.top = `${top}px`;
+    }
     return host;
   }
 
@@ -197,6 +212,7 @@
 
     btn.addEventListener("click", ev => {
       ev.stopPropagation();
+      ensureColorMenuHost(); // refresh width/position in case the button size changed
       document.getElementById("add-menu")?.classList.remove("is-open");
       document.getElementById("sb-metrics-menu")?.classList.remove("is-open");
       host.classList.toggle("is-open");
