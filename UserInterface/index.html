@@ -59,7 +59,7 @@
   <section id="splash" class="center-stage">
     <label for="upload-input" id="upload-button" class="btn btnbig">View Results</label>
     <p id="upload-hint" class="upload-hint"></p>
-    <input id="upload-input" type="file" accept=".tsv,.txt" hidden/>
+    <input id="upload-input" name="upload-input" type="file" accept=".tsv,.txt" hidden/>
   </section>
 
   <!-- MAIN PANELS -->
@@ -100,7 +100,7 @@
       <!-- OPT panel -->
       <section id="panelopt" class="panel panelthin" data-reserve>
       <div class="toolbar">
-        <input class="optinput" id="customsel">
+        <input class="optinput" id="customsel" name="customsel">
         <button id="btnapplyopt" class="btn btnsm">Apply</button>
       </div>
 
@@ -116,7 +116,7 @@
         <div id="legendhost"></div>
       </section>
 
-      <!-- NEW COLOR-BY panel -->
+      <!-- COLOR-BY panel -->
       <section id="panelcolor" class="panel panelthin">
         <div class="chart-color-group">
           <span class="ctl-label">Color by</span>
@@ -158,23 +158,29 @@
     <!-- ================== UMAP PANEL ================== -->
     <section id="panelumap" class="panel">
       <div class="toolbar umap-toolbar">
+        <div class="umap-labelby">
+          <span class="ctl-label">Label by</span>
+          <button id="umapLabelBtn" class="btn btnsm hasmenu">Label by</button>
+          <div id="umap-label-menu" class="menu-drop"></div>
+        </div>
+        <h3 class="umap-title">UMAP hyperparameters</h3>
         <div class="umap-form" style="margin:0;">
           <label class="ctl-label" for="umap_components">nComponents</label>
-          <input id="umap_components" class="ctrlsm" type="number" min="2" max="10">
+          <input id="umap_components" name="umap_components" class="ctrlsm" type="number" min="2" max="10">
 
           <label class="ctl-label" for="umap_neighbors">nNeighbors</label>
-          <input id="umap_neighbors" class="ctrlsm" type="number" min="1">
+          <input id="umap_neighbors" name="umap_neighbors" class="ctrlsm" type="number" min="1">
 
           <label class="ctl-label" for="umap_metric">distanceFn</label>
           <span class="select-wrap hasmenu">
-            <select id="umap_metric" class="ctrlsm"></select>
+            <select id="umap_metric" name="umap_metric" class="ctrlsm"></select>
           </span>
 
           <label class="ctl-label" for="umap_mindist">minDist</label>
-          <input id="umap_mindist" class="ctrlsm" type="number" step="0.01">
+          <input id="umap_mindist" name="umap_mindist" class="ctrlsm" type="number" step="0.01">
 
           <label class="ctl-label" for="umap_spread">Spread</label>
-          <input id="umap_spread" class="ctrlsm" type="number" step="0.1">
+          <input id="umap_spread" name="umap_spread" class="ctrlsm" type="number" step="0.1">
         </div>
         <div class="umap-actions">
           <button id="btnCohortFinder" class="btn btnlg">Cohort Finder</button>
@@ -200,7 +206,7 @@
   </main>
 
   <!-- External load input -->
-  <input id="extfile-input" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" hidden>
+  <input id="extfile-input" name="extfile-input" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" hidden>
 
   <!-- JS Libraries -->
   <script src="libs/d3-3.5.17/d3.min.js"></script>

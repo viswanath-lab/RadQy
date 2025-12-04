@@ -11,8 +11,28 @@
   display:flex;
   flex-direction:column;
   align-items:flex-start;
-  gap:60px; /* controls gap between form and button */
+  gap:14px; /* tighter now that label-by sits on top */
   margin:0;
+}
+
+.umap-title{
+  margin:6px 0 0 0;
+  font-size:12px;
+  font-weight:600;
+  color:var(--color-emory-blue);
+  width:100%;
+  text-align:center;
+  position:relative;
+  padding-bottom:5px;
+}
+.umap-title::after{
+  content:"";
+  position:absolute;
+  left:0%;
+  right:0%;
+  bottom:0;
+  height:2px;
+  background:var(--color-border);
 }
 
 .umap-form{
@@ -29,6 +49,39 @@
   display:flex;
   flex-direction:column;
   gap:6px;
+  margin-top:30px; /* spacing from hyperparameter inputs (cohortfinder top)*/
+}
+
+.umap-labelby{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:10px; /* controls spacing above hyperparameter inputs */
+  position:relative; /* anchor dropdown under the button */
+}
+
+#umap-label-menu{
+  min-width: 160px !important;
+  width: 180px !important;
+  background:#ffffff;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  box-shadow:0 4px 8px rgba(15,23,42,0.12);
+  padding:4px 0;
+  z-index:12000;
+  top:100%;
+  left:0;
+}
+#umap-label-menu .menu-item{
+  width:100%;
+  padding:6px 12px;
+  font-size:10px;
+  text-align:left;
+  background:#ffffff;
+  border:none;
+}
+#umap-label-menu .menu-item:hover{
+  background:var(--color-aux, #e5f1ff);
 }
 
 /* Chart-like small controls */
@@ -143,4 +196,60 @@
 }
 #umaphost .modebar-btn{
   margin:0;
+}
+
+.label-dialog-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--color-emory-blue);
+  margin-bottom:10px;
+}
+.label-dialog-form{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.label-dialog-form label{
+  font-size:11px;
+  color:var(--color-text);
+}
+.label-dialog-form input{
+  height:28px;
+  padding:4px 8px;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  font-size:12px;
+}
+.label-dialog-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+.label-dialog-actions .btn{
+  position:static;
+  top:auto;
+  right:auto;
+  margin:0;
+  min-width:64px;
+}
+#label-dialog-overlay{
+  position:fixed;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.25);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:15000;
+}
+#label-dialog{
+  background:#fff;
+  border:1px solid var(--color-border);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
+  padding:16px;
+  min-width:260px;
 }

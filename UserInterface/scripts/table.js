@@ -1157,7 +1157,7 @@
     syncBackToDATA();
     updateMetaCounts(TABLE_STATE.headers, TABLE_STATE.rows);
     document.dispatchEvent(new CustomEvent("radqy:data:updated", {
-      detail: { what: "add_column", name }
+      detail: { what: "add_column", name, skipUMAP: true }
     }));
   }
 
@@ -1196,6 +1196,106 @@
     updateMetaCounts(headers, rows);
     document.dispatchEvent(new CustomEvent("radqy:data:updated", {
       detail: { what: "add_column", name: colName, skipUMAP: true }
+    }));
+
+    return colName;
+  };
+
+  // Expose a helper to add an empty AUX column (no prompt)
+  window.RADQY.addEmptyAuxColumn = function () {
+    if (!TABLE_STATE.headers.length) return null;
+
+    const headers = TABLE_STATE.headers;
+    const rows    = TABLE_STATE.rows;
+    const meta    = ensureMetaLists();
+
+    const insertIdx = 2; // after PID column
+
+    let base = "Column";
+    let name = base;
+    let k = 2;
+    while (headers.includes(name)) {
+      name = base + " " + k;
+      k += 1;
+    }
+
+    headers.splice(insertIdx, 0, name);
+
+    rows.forEach(r => {
+      if (!(name in r)) r[name] = "";
+    });
+
+    const low = name.toLowerCase();
+    if (!meta.auxs.includes(low)) meta.auxs.push(low);
+
+    renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(TABLE_STATE.headers, TABLE_STATE.rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "add_column", name, skipUMAP: true }
+    }));
+
+    return name;
+  };
+
+  // Overwrite an existing AUX column with the current selection
+  window.RADQY.writeSelectionAuxColumn = function (colName, selectedIdxs, labels) {
+    if (!TABLE_STATE.headers.length) return null;
+    if (!colName) return null;
+
+    const headers = TABLE_STATE.headers;
+    if (!headers.includes(colName)) return null;
+
+    const rows = TABLE_STATE.rows;
+    const meta = ensureMetaLists();
+    const selected = new Set(Array.isArray(selectedIdxs) ? selectedIdxs : []);
+
+    const selLabel = (labels && labels.selected) || "Selected";
+    const unselLabel = (labels && labels.unselected) || "Unselected";
+    rows.forEach((r, idx) => {
+      r[colName] = selected.has(idx) ? selLabel : unselLabel;
+    });
+
+    const low = colName.toLowerCase();
+    if (!meta.auxs.includes(low)) meta.auxs.push(low);
+
+    renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(headers, rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "update_column", name: colName, skipUMAP: true }
+    }));
+
+    return colName;
+  };
+
+  // Append a new label to only the currently selected rows of an AUX column (keep existing labels)
+  window.RADQY.appendSelectionLabelToColumn = function (colName, selectedIdxs, newLabel) {
+    if (!TABLE_STATE.headers.length) return null;
+    if (!colName) return null;
+    if (!Array.isArray(selectedIdxs) || !selectedIdxs.length) return colName;
+    const headers = TABLE_STATE.headers;
+    if (!headers.includes(colName)) return null;
+
+    const rows = TABLE_STATE.rows;
+    const meta = ensureMetaLists();
+    const selected = new Set(selectedIdxs);
+    const labelVal = (newLabel && String(newLabel).trim()) || "Selected";
+
+    rows.forEach((r, idx) => {
+      if (selected.has(idx)) {
+        r[colName] = labelVal;
+      }
+    });
+
+    const low = colName.toLowerCase();
+    if (!meta.auxs.includes(low)) meta.auxs.push(low);
+
+    renderTable(false);
+    syncBackToDATA();
+    updateMetaCounts(headers, rows);
+    document.dispatchEvent(new CustomEvent("radqy:data:updated", {
+      detail: { what: "update_column", name: colName, skipUMAP: true }
     }));
 
     return colName;

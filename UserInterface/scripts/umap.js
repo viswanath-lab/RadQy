@@ -16,6 +16,11 @@
   let plotReady = false;
   let selectionShape = null;
   let selectedPoints = [];
+  let labelByCurrent = "";
+  let labelByIndex = null;
+  let labelDialog = null;
+  let labelDialogResolver = null;
+  let restyleLock = false;
 
   function loadPlotly(cb){
     if (window.Plotly) return cb();
@@ -100,6 +105,8 @@
 
   function restyleMarkers(hoverIdx){
     if (!window.Plotly || !window.UMAP_STATE.embedding) return;
+    if (restyleLock) return;
+    restyleLock = true;
     const emb = window.UMAP_STATE.embedding;
     const sel = selectionSet();
     const selectedPoints = new Set(sel);
@@ -124,7 +131,7 @@
       "selectedpoints":[Array.from(selectedPoints)],
       "selected.marker.opacity":[1],
       "unselected.marker.opacity":[1]
-    });
+    }).catch(()=>{}).finally(()=>{ restyleLock = false; });
   }
 
   function findRowIndexByCaseName(caseName){
@@ -259,23 +266,25 @@
       Plotly.react(hostId, [trace], layout, cfg).then(() => {
         const plot = document.getElementById(hostId);
         if (!plotReady) {
-          // Lasso/box selection: keep hover feedback while drawing
+          // Lasso/box selection: live selection coloring while drawing
           plot.on("plotly_selecting", ev=>{
             const pts = (ev && ev.points) || [];
-            const last = pts[pts.length - 1];
-            const idx = last ? last.pointIndex : -1;
-            restyleMarkers(idx);
-            const name = idx >= 0 ? caseNameForRow(idx) : null;
-            try{
-              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:name,on:idx>=0,rowIndex:idx}}));
-            }catch(e){}
-            if (typeof window.hoverTableRow === "function") {
-              window.hoverTableRow(name, idx>=0);
+            const incoming = Array.from(new Set(pts.map(p=>p.pointIndex).filter(Number.isFinite)));
+            const mergedSet = new Set(Array.from(selectionSet()));
+            incoming.forEach(i => mergedSet.add(i));
+            const idxs = Array.from(mergedSet);
+            selectedPoints = idxs;
+            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
+              window.RADQY.setSelectedRowIndices(idxs);
             }
+            restyleMarkers(-1);
           });
           plot.on("plotly_selected", ev=>{
             const pts = (ev && ev.points) || [];
-            const idxs = Array.from(new Set(pts.map(p=>p.pointIndex).filter(Number.isFinite)));
+            const incoming = Array.from(new Set(pts.map(p=>p.pointIndex).filter(Number.isFinite)));
+            const mergedSet = new Set(Array.from(selectionSet()));
+            incoming.forEach(i => mergedSet.add(i));
+            const idxs = Array.from(mergedSet);
             if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
               window.RADQY.setSelectedRowIndices(idxs);
             }
@@ -346,6 +355,256 @@
         restyleMarkers(-1);
       });
     });
+  }
+
+  // ---------- Label-by dropdown (save selection as AUX) ----------
+  function ensureLabelMenu(){
+    const btn = document.getElementById("umapLabelBtn");
+    const host = document.getElementById("umap-label-menu");
+    if (!btn || !host) return null;
+    return host;
+  }
+
+  function auxColumns(){
+    const headers = (window.DATA && window.DATA.HEADERS) || [];
+    const metaAux = ((window.DATA && window.DATA.META && window.DATA.META.auxs) || []).map(String);
+    const auxLow = new Set(metaAux.map(h => h.toLowerCase()));
+    if (!auxLow.size) return [];
+    return headers.filter(h=>{
+      const low = String(h).toLowerCase();
+      if (low === "p#" || low === "pid" || low === "comment") return false;
+      return auxLow.has(low);
+    });
+  }
+
+  function getSelectionIdxs(){
+    return Array.from(selectionSet());
+  }
+
+  function saveSelectionAsAux(labelsOverride){
+    const sel = getSelectionIdxs();
+    if (!sel.length) {
+      alert("Select at least one participant (lasso/box) first.");
+      return null;
+    }
+    const labels = labelsOverride || { selected: "Selected", unselected: "Unselected" };
+    if (window.RADQY && typeof window.RADQY.addSelectionAuxColumn === "function") {
+      const col = window.RADQY.addSelectionAuxColumn(null, sel, labels);
+      if (col && window.RADQY.applyColorBy) {
+        const rows = (window.DATA && window.DATA.ROWS) || [];
+        const vals = Array.from(new Set(rows.map(r => r && r[col]).filter(v => v != null && v !== "")));
+        window.RADQY.applyColorBy(col, vals.length ? vals : [labels.selected, labels.unselected]);
+      }
+      return col;
+    }
+    return null;
+  }
+
+  function addEmptyAuxAndSelect(){
+    if (window.RADQY && typeof window.RADQY.addEmptyAuxColumn === "function") {
+      return window.RADQY.addEmptyAuxColumn();
+    }
+    return null;
+  }
+
+  function headersNow(){
+    return (window.DATA && window.DATA.HEADERS) || [];
+  }
+
+  function updateLabelByIndexFromName(name){
+    const headers = headersNow();
+    const idx = headers.indexOf(name);
+    labelByIndex = idx >= 0 ? idx : null;
+  }
+
+  function refreshLabelByFromIndex(){
+    if (labelByIndex == null) return;
+    const headers = headersNow();
+    if (headers[labelByIndex]) {
+      labelByCurrent = headers[labelByIndex];
+    } else if (labelByCurrent && !headers.includes(labelByCurrent)) {
+      labelByCurrent = "";
+      labelByIndex = null;
+    }
+  }
+
+  function ensureLabelDialog(){
+    if (labelDialog) return labelDialog;
+    const overlay = document.createElement("div");
+    overlay.id = "label-dialog-overlay";
+    overlay.style.display = "none";
+    const box = document.createElement("div");
+    box.id = "label-dialog";
+    const title = document.createElement("div");
+    title.className = "label-dialog-title";
+    title.textContent = "Save selection labels";
+    const form = document.createElement("div");
+    form.className = "label-dialog-form";
+    const selLabel = document.createElement("label");
+    selLabel.textContent = "Selected label";
+    const selInput = document.createElement("input");
+    selInput.type = "text";
+    selInput.id = "label-dialog-selected";
+    selInput.name = "label-selected";
+    selInput.setAttribute("aria-label", "Selected label");
+    selLabel.setAttribute("for", selInput.id);
+    const unselLabel = document.createElement("label");
+    unselLabel.textContent = "Unselected label";
+    const unselInput = document.createElement("input");
+    unselInput.type = "text";
+    unselInput.id = "label-dialog-unselected";
+    unselInput.name = "label-unselected";
+    unselInput.setAttribute("aria-label", "Unselected label");
+    unselLabel.setAttribute("for", unselInput.id);
+    const actions = document.createElement("div");
+    actions.className = "label-dialog-actions";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn btnsm";
+    cancelBtn.textContent = "Cancel";
+    const okBtn = document.createElement("button");
+    okBtn.type = "button";
+    okBtn.className = "btn btnsm btnon";
+    okBtn.textContent = "OK";
+    form.appendChild(selLabel);
+    form.appendChild(selInput);
+    form.appendChild(unselLabel);
+    form.appendChild(unselInput);
+    actions.appendChild(cancelBtn);
+    actions.appendChild(okBtn);
+    box.appendChild(title);
+    box.appendChild(form);
+    box.appendChild(actions);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    cancelBtn.addEventListener("click", ()=>{
+      overlay.style.display = "none";
+      if (labelDialogResolver) labelDialogResolver(null);
+    });
+    okBtn.addEventListener("click", ()=>{
+      overlay.style.display = "none";
+      const vals = {
+        selected: selInput.value.trim() || "Selected",
+        unselected: unselInput.value.trim() || "Unselected"
+      };
+      if (labelDialogResolver) labelDialogResolver(vals);
+    });
+
+    [selInput, unselInput].forEach(inp=>{
+      inp.addEventListener("keydown", (e)=>{
+        if (e.key === "Enter") {
+          e.preventDefault();
+          okBtn.click();
+        }
+      });
+    });
+
+    labelDialog = { overlay, selInput, unselInput };
+    return labelDialog;
+  }
+
+  function openLabelDialog(defaults){
+    const dlg = ensureLabelDialog();
+    if (!dlg) return Promise.resolve(null);
+    const def = defaults || { selected: "Selected", unselected: "Unselected" };
+    dlg.selInput.value = def.selected;
+    dlg.unselInput.value = def.unselected;
+    dlg.overlay.style.display = "flex";
+    dlg.selInput.focus();
+    return new Promise(resolve => {
+      labelDialogResolver = resolve;
+    });
+  }
+
+  function buildLabelMenu(){
+    const btn = document.getElementById("umapLabelBtn");
+    const host = ensureLabelMenu();
+    if (!btn || !host) return;
+    host.innerHTML = "";
+
+    const aux = auxColumns();
+    refreshLabelByFromIndex();
+
+    // Reset button text if current selection is gone
+    if (labelByCurrent && !aux.includes(labelByCurrent)) {
+      labelByCurrent = "";
+      labelByIndex = null;
+    }
+    btn.textContent = labelByCurrent || "";
+    btn.setAttribute("aria-label", labelByCurrent ? `Label by ${labelByCurrent}` : "Save selection as AUX");
+
+    const newItem = document.createElement("button");
+    newItem.type = "button";
+    newItem.className = "menu-item";
+    newItem.textContent = "+ New Column";
+    newItem.addEventListener("click", async ()=>{
+      host.classList.remove("is-open");
+      const labels = await openLabelDialog({ selected: "Selected", unselected: "Unselected" });
+      if (!labels) return;
+      const col = saveSelectionAsAux(labels);
+      if (col) {
+        updateLabelByIndexFromName(col);
+        labelByCurrent = col;
+        btn.textContent = col;
+        btn.setAttribute("aria-label", `Label by ${col}`);
+        buildLabelMenu();
+      }
+    });
+    host.appendChild(newItem);
+
+    if (aux.length){
+      aux.forEach(col=>{
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "menu-item";
+        item.textContent = col;
+        item.addEventListener("click", async ()=>{
+          host.classList.remove("is-open");
+          const sel = getSelectionIdxs();
+          if (!sel.length) {
+            alert("Select at least one participant (lasso/box) first.");
+            return;
+          }
+          const defaults = { selected: "Selected", unselected: "Unselected" };
+          const override = await openLabelDialog(defaults);
+          if (!override) return;
+          if (window.RADQY && typeof window.RADQY.appendSelectionLabelToColumn === "function") {
+            window.RADQY.appendSelectionLabelToColumn(col, sel, override.selected);
+          }
+          if (window.RADQY && typeof window.RADQY.applyColorBy === "function") {
+            const rows = (window.DATA && window.DATA.ROWS) || [];
+            const vals = Array.from(new Set(rows.map(r => r && r[col]).filter(v => v != null && v !== "")));
+            window.RADQY.applyColorBy(col, vals);
+          }
+          updateLabelByIndexFromName(col);
+          labelByCurrent = col;
+          btn.textContent = col;
+          btn.setAttribute("aria-label", `Label by ${col}`);
+        });
+        host.appendChild(item);
+      });
+    }
+  }
+
+  function bindLabelMenu(){
+    const btn = document.getElementById("umapLabelBtn");
+    const host = ensureLabelMenu();
+    if (!btn || !host) return;
+
+    btn.addEventListener("click", ev=>{
+      ev.stopPropagation();
+      host.classList.toggle("is-open");
+    });
+    host.addEventListener("click", ev=> ev.stopPropagation());
+    document.addEventListener("click", ()=> host.classList.remove("is-open"));
+  }
+
+  function toggleLabelByVisibility(){
+    const wrap = document.querySelector(".umap-labelby");
+    if (!wrap) return;
+    const hasSel = selectionSet().size > 0;
+    wrap.style.display = hasSel ? "flex" : "none";
   }
 
   function computeEmbedding(state){
@@ -428,6 +687,20 @@
   document.addEventListener("radqy:selection-changed", ()=>{
     selectedPoints = Array.from(selectionSet());
     restyleMarkers(-1);
+    toggleLabelByVisibility();
+  });
+  document.addEventListener("DOMContentLoaded", ()=>{
+    buildLabelMenu();
+    bindLabelMenu();
+    toggleLabelByVisibility();
+  });
+  document.addEventListener("radqy:data:updated", ()=>{
+    buildLabelMenu();
+    toggleLabelByVisibility();
+  });
+  document.addEventListener("radqy:table:updated", ()=>{
+    buildLabelMenu();
+    toggleLabelByVisibility();
   });
 
   // Hover sync inbound: highlight corresponding point
