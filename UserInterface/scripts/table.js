@@ -697,12 +697,17 @@
     const container = findScrollable(tr) || tbody;
     const trRect = tr.getBoundingClientRect();
     const cRect  = container.getBoundingClientRect();
+    const currentScroll = container.scrollTop || 0;
 
-    const above = trRect.top < cRect.top;
-    const below = trRect.bottom > cRect.bottom;
+    const trTop    = trRect.top - cRect.top + currentScroll;
+    const trBottom = trRect.bottom - cRect.top + currentScroll;
+    const viewTop  = currentScroll;
+    const viewBot  = currentScroll + cRect.height;
 
-    if (above || below) {
-      tr.scrollIntoView({ block: "center", behavior: "smooth" });
+    // Only scroll the table's own container, not the whole page
+    if (trTop < viewTop || trBottom > viewBot) {
+      const target = Math.max(0, trTop - (cRect.height / 2) + (trRect.height / 2));
+      container.scrollTo({ top: target, behavior: "smooth" });
     }
   }
 

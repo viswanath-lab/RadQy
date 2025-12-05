@@ -15,6 +15,7 @@
   --color-emory-yellow: #F2A900;
   --color-dogwood:      #F6F6F6;
   --color-waterhub:     #0033A0;
+  --color-umap-metric:  #1c7c54;  /* distinct green for distanceFn arrow */
 
   /* Neutrals */
   --color-bg:           #ffffff;

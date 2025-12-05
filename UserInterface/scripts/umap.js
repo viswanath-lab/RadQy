@@ -22,6 +22,14 @@
   let labelDialogResolver = null;
   let restyleLock = false;
   let cohortShapes = [];
+  let lastNumericSignature = null;
+
+  const MAIN_TRACE_IDX    = 0;
+  const HOVER_TRACE_IDX   = 1;
+  const SELECT_TRACE_IDX  = 2;
+  const ALLOW_RENDER_REASONS = new Set(["init","hyperparam","data","metrics"]);
+  const RECOMPUTE_DEBOUNCE_MS = 150;
+  let pendingRecompute = null;
 
   function moveModebarToRail(){
     const rail = document.getElementById("umap-modebar-rail");
@@ -70,15 +78,75 @@
     if (typeof window.radqyInferNumericColumns === "function"){
       return window.radqyInferNumericColumns(rows);
     }
-    const sample = rows[0] || {};
-    return Object.keys(sample).filter(k => Number.isFinite(parseFloat(sample[k])));
+    const headers = Object.keys(rows[0] || {});
+    return headers.filter(h=>{
+      if (/^participant\b/i.test(String(h))) return false;
+      if (String(h).trim() === "P#") return false;
+      let sawNumeric = false;
+      for (let i=0;i<rows.length;i++){
+        const v = rows[i][h];
+        if (v === "" || v == null) continue;
+        const num = typeof v === "number" ? v : parseFloat(v);
+        if (!Number.isFinite(num)) return false;
+        sawNumeric = true;
+      }
+      return sawNumeric;
+    });
+  }
+
+  function toNumeric(val){
+    if (val === "" || val == null) return null;
+    const num = typeof val === "number" ? val : parseFloat(val);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  function numericSignature(rows){
+    const cols = numericColumns(rows);
+    const stats = cols.map(c=>{
+      let count = 0;
+      let missing = 0;
+      let sum = 0;
+      let sumSq = 0;
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i=0;i<rows.length;i++){
+        const num = toNumeric(rows[i][c]);
+        if (num == null) { missing += 1; continue; }
+        count += 1;
+        sum += num;
+        sumSq += num * num;
+        if (num < min) min = num;
+        if (num > max) max = num;
+      }
+      if (!count) { min = 0; max = 0; }
+      const safeSum   = Number.isFinite(sum)   ? sum   : 0;
+      const safeSumSq = Number.isFinite(sumSq) ? sumSq : 0;
+      return [
+        c,
+        count,
+        missing,
+        safeSum.toPrecision(12),
+        safeSumSq.toPrecision(12),
+        min,
+        max
+      ].join(":");
+    });
+    return {
+      cols,
+      key: `${rows.length}|${cols.join(",")}|${stats.join("|")}`
+    };
+  }
+
+  function hasNumericDataChanged(sig){
+    if (!sig) return false;
+    if (!lastNumericSignature) return true;
+    return sig.key !== lastNumericSignature.key;
   }
 
   function buildMatrix(rows, cols){
     return rows.map(r => cols.map(c => {
-      const v = r[c];
-      const num = (typeof v === "number") ? v : parseFloat(v);
-      return Number.isFinite(num) ? num : 0;
+      const num = toNumeric(r[c]);
+      return num != null ? num : 0;
     }));
   }
 
@@ -129,6 +197,18 @@
     }
     return new Set();
   }
+  function renderIfAllowed(nextState, reason){
+    if (!ALLOW_RENDER_REASONS.has(reason)) return;
+    window.renderUMAP(nextState, reason);
+  }
+
+  function scheduleRender(nextState, reason){
+    if (!ALLOW_RENDER_REASONS.has(reason)) return;
+    clearTimeout(pendingRecompute);
+    pendingRecompute = setTimeout(()=>{
+      renderIfAllowed(nextState, reason);
+    }, RECOMPUTE_DEBOUNCE_MS);
+  }
 
   function restyleMarkers(hoverIdx){
     if (!window.Plotly || !window.UMAP_STATE.embedding) return;
@@ -144,21 +224,18 @@
       if (sel.has(i)) return palette("select", cat);
       return palette("base", cat);
     });
-    const sizes = emb.map((p,i)=>{
-      if (i === hoverIdx) return 14;
-      if (sel.has(i)) return 12;
-      return 10;
-    });
+    const sizes = emb.map(()=> 10);
     const widths = emb.map(()=>0);
+    const opacities = emb.map((p,i)=> i === hoverIdx ? 1 : 1);
     Plotly.restyle(hostId, {
       "marker.color":[colors],
       "marker.size":[sizes],
+      "marker.opacity":[opacities],
       "marker.line.width":[widths],
-      "marker.opacity":[1],
-      "selectedpoints":[Array.from(selectedPoints)],
-      "selected.marker.opacity":[1],
-      "unselected.marker.opacity":[1]
-    }).catch(()=>{}).finally(()=>{ restyleLock = false; });
+      "selectedpoints":[Array.from(selectedPoints)]
+    }, [MAIN_TRACE_IDX]).catch(()=>{}).finally(()=>{ restyleLock = false; });
+    setHoverOverlay(hoverIdx);
+    setSelectedOverlay();
   }
 
   function findRowIndexByCaseName(caseName){
@@ -175,6 +252,70 @@
       if (caseName.toLowerCase() === (`p${i+1}`).toLowerCase()) return i;
     }
     return -1;
+  }
+
+  function setHoverOverlay(hoverIdx){
+    if (!window.Plotly) return;
+    const emb = window.UMAP_STATE && window.UMAP_STATE.embedding;
+    if (!emb || !emb.length) return;
+    if (!Number.isFinite(hoverIdx) || hoverIdx < 0 || !emb[hoverIdx]) {
+      Plotly.restyle(hostId, {
+        x: [[]],
+        y: [[]],
+        "marker.opacity":[0],
+        "marker.size":[0],
+        "marker.line.width":[0]
+      }, [HOVER_TRACE_IDX]).catch(()=>{});
+      return;
+    }
+    const pt = emb[hoverIdx];
+    const cat = catIndex(hoverIdx);
+    const color = palette("hover", cat);
+    Plotly.restyle(hostId, {
+      x: [[pt[0]]],
+      y: [[pt[1]]],
+      "marker.color":[[color]],
+      "marker.size":[[10]],
+      "marker.opacity":[[1]],
+      "marker.line.color":[["transparent"]],
+      "marker.line.width":[[0]]
+    }, [HOVER_TRACE_IDX]).catch(()=>{});
+  }
+
+  function setSelectedOverlay(){
+    if (!window.Plotly || !window.UMAP_STATE.embedding) return;
+    const emb = window.UMAP_STATE.embedding;
+    const sel = selectionSet();
+    if (!sel.size) {
+      Plotly.restyle(hostId, {
+        x:[[]],
+        y:[[]],
+        "marker.opacity":[0],
+        "marker.size":[0],
+        "marker.line.width":[0]
+      }, [SELECT_TRACE_IDX]).catch(()=>{});
+      return;
+    }
+    const xs = [];
+    const ys = [];
+    const colors = [];
+    sel.forEach(idx=>{
+      if (!Number.isFinite(idx) || !emb[idx]) return;
+      const pt = emb[idx];
+      const cat = catIndex(idx);
+      xs.push(pt[0]);
+      ys.push(pt[1]);
+      colors.push(palette("select", cat));
+    });
+    Plotly.restyle(hostId, {
+      x:[xs],
+      y:[ys],
+      "marker.color":[colors],
+      "marker.size":[Array(xs.length).fill(10)],
+      "marker.opacity":[Array(xs.length).fill(1)],
+      "marker.line.color":[Array(xs.length).fill("transparent")],
+      "marker.line.width":[Array(xs.length).fill(0)]
+    }, [SELECT_TRACE_IDX]).catch(()=>{});
   }
 
   function caseNameForRow(idx){
@@ -199,16 +340,16 @@
       const cat = catIndex(i);
       return sel.has(i) ? palette("select", cat) : palette("base", cat);
     });
-    const sizes = embedding.map((_,i)=> sel.has(i) ? 12 : 10);
     return {
       x: embedding.map(p=>p[0]),
       y: embedding.map(p=>p[1]),
       mode: "markers",
-      type: "scattergl",
+      // Use non-WebGL scatter to avoid GL driver buffer warnings seen with scattergl
+      type: "scatter",
       text: rows.map((r,idx)=> r && r["P#"] ? r["P#"] : `P${idx+1}`),
       hoverinfo: "text",
       marker: {
-        size: sizes,
+        size: embedding.map(()=> 10),
         color: colors,
         opacity: 1,
         line: {
@@ -218,6 +359,42 @@
       },
       selected:   { marker: { opacity: 1 } },
       unselected: { marker: { opacity: 1 } }
+    };
+  }
+
+  function buildHoverTrace(){
+    return {
+      x: [],
+      y: [],
+      mode: "markers",
+      type: "scatter",
+      cliponaxis:false,
+      hoverinfo: "skip",
+      showlegend: false,
+      marker: {
+        size: 0,
+        color: "rgba(0,0,0,0)",
+        opacity: 0,
+        line: { width: 0, color: "transparent" }
+      }
+    };
+  }
+
+  function buildSelectedTrace(){
+    return {
+      x: [],
+      y: [],
+      mode: "markers",
+      type: "scatter",
+      cliponaxis:false,
+      hoverinfo: "skip",
+      showlegend: false,
+      marker: {
+        size: 0,
+        color: "rgba(0,0,0,0)",
+        opacity: 0,
+        line: { width: 0, color: "transparent" }
+      }
     };
   }
 
@@ -466,6 +643,8 @@
       plotReady = false;
       const trace = buildTrace(embedding, rows);
       trace.selectedpoints = [selectedPoints];
+      const hoverTrace = buildHoverTrace();
+      const selectedTrace = buildSelectedTrace();
       const layout = {
         margin:{l:10,r:10,t:10,b:10},
         showlegend:false,
@@ -484,7 +663,7 @@
         displayModeBar:true,
         modeBarPosition:"topright"
       };
-      Plotly.react(hostId, [trace], layout, cfg).then(() => {
+      Plotly.react(hostId, [trace, hoverTrace, selectedTrace], layout, cfg).then(() => {
         moveModebarToRail();
         const plot = document.getElementById(hostId);
         if (!plotReady) {
@@ -504,22 +683,23 @@
           plot.on("plotly_selected", ev=>{
             const pts = (ev && ev.points) || [];
             const incoming = Array.from(new Set(pts.map(p=>p.pointIndex).filter(Number.isFinite)));
-            const mergedSet = new Set(Array.from(selectionSet()));
-            incoming.forEach(i => mergedSet.add(i));
-            const idxs = Array.from(mergedSet);
-            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
-              window.RADQY.setSelectedRowIndices(idxs);
-            }
-            selectedPoints = idxs;
-            setSelectionShape(ev);
-            Plotly.restyle(hostId, { selectedpoints: [selectedPoints] });
-            Plotly.relayout(hostId, { shapes: currentShapes() });
-            restyleMarkers(-1);
-            try{
-              document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
-            }catch(e){}
-            if (typeof window.hoverTableRow === "function") {
-              window.hoverTableRow(null, false);
+          const mergedSet = new Set(Array.from(selectionSet()));
+          incoming.forEach(i => mergedSet.add(i));
+          const idxs = Array.from(mergedSet);
+          if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
+            window.RADQY.setSelectedRowIndices(idxs);
+          }
+          selectedPoints = idxs;
+          setSelectionShape(ev);
+          Plotly.restyle(hostId, { selectedpoints: [selectedPoints] }, [MAIN_TRACE_IDX]);
+          Plotly.relayout(hostId, { shapes: currentShapes() });
+          setSelectedOverlay();
+          restyleMarkers(-1);
+          try{
+            document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
+          }catch(e){}
+          if (typeof window.hoverTableRow === "function") {
+            window.hoverTableRow(null, false);
             }
           });
           plot.on("plotly_deselect", ()=>{
@@ -528,8 +708,9 @@
             }
             selectedPoints = [];
             selectionShape = null;
-            Plotly.restyle(hostId, { selectedpoints: [[]] });
+            Plotly.restyle(hostId, { selectedpoints: [[]] }, [MAIN_TRACE_IDX]);
             Plotly.relayout(hostId, { shapes: currentShapes() });
+            setSelectedOverlay();
             restyleMarkers(-1);
             try{
               document.dispatchEvent(new CustomEvent("radqy:hover:change",{detail:{caseName:null,on:false,rowIndex:null}}));
@@ -578,19 +759,13 @@
               ev &&
               (ev["xaxis.autorange"] === true || ev["yaxis.autorange"] === true || ev["scene.autorange"] === true);
             if (!isHome) return;
-            selectionShape = null;
-            cohortShapes = [];
-            selectedPoints = [];
-            selectionSet().clear?.();
-            if (window.RADQY && typeof window.RADQY.setSelectedRowIndices === "function"){
-              window.RADQY.setSelectedRowIndices([]);
-            }
-            Plotly.restyle(hostId, { selectedpoints: [[null]] });
-            Plotly.relayout(hostId, { shapes: [], selections: [] });
+            // Keep selection/overlays, just reapply styling so selected points stay visible after autoscale
+            setSelectedOverlay();
             restyleMarkers(-1);
           });
           plotReady = true;
         }
+        setSelectedOverlay();
         restyleMarkers(-1);
       });
     });
@@ -990,11 +1165,30 @@
     wrap.style.display = hasSel ? "flex" : "none";
   }
 
-  function computeEmbedding(state){
+  function clearUmapPlot(message){
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    plotReady = false;
+    if (window.Plotly) {
+      try { Plotly.purge(hostId); } catch(e){}
+    }
+    const rail = document.getElementById("umap-modebar-rail");
+    if (rail) rail.innerHTML = "";
+    if (message) {
+      host.innerHTML = `<div class="umap-placeholder">${message}</div>`;
+    }
+  }
+
+  function computeEmbedding(state, signature){
     const rows = (window.DATA && window.DATA.ROWS) || [];
-    if (!rows.length) return null;
-    const cols = numericColumns(rows);
-    if (cols.length < 2) return null;
+    const sig = signature || numericSignature(rows);
+    const cols = sig.cols;
+    if (!rows.length || cols.length < 2) {
+      window.UMAP_STATE.embedding = null;
+      lastNumericSignature = sig;
+      clearUmapPlot(rows.length ? "UMAP needs at least two numeric metrics." : "No participants available for UMAP.");
+      return null;
+    }
     const matrix = buildMatrix(rows, cols);
     let embedding = null;
     loadUmap(()=>{
@@ -1011,21 +1205,36 @@
       });
       embedding = umap.fit(matrix);
       window.UMAP_STATE.embedding = embedding;
+      lastNumericSignature = sig;
+      window.UMAP_STATE._dataSignature = sig;
       plotEmbedding(embedding, rows);
     });
     return embedding;
   }
 
-  window.renderUMAP = function(nextState){
+  window.renderUMAP = function(nextState, reason){
     if (nextState) window.UMAP_STATE = Object.assign({}, window.UMAP_STATE, nextState);
-    if (nextState && nextState.recompute) {
-      computeEmbedding(window.UMAP_STATE);
+    const rows = (window.DATA && window.DATA.ROWS) || [];
+    const signature = numericSignature(rows);
+    const wantsRecompute = !!(nextState && nextState.recompute);
+    const dataChanged = wantsRecompute && hasNumericDataChanged(signature);
+    const needsEmbedding =
+      reason === "hyperparam" ||
+      dataChanged ||
+      (!window.UMAP_STATE.embedding && signature.cols.length >= 2);
+
+    if (needsEmbedding) {
+      computeEmbedding(window.UMAP_STATE, signature);
       return;
     }
-    if (window.UMAP_STATE.embedding) {
-      plotEmbedding(window.UMAP_STATE.embedding, (window.DATA && window.DATA.ROWS) || []);
-    } else {
-      computeEmbedding(window.UMAP_STATE);
+
+    if (!window.UMAP_STATE.embedding) {
+      clearUmapPlot(rows.length ? "UMAP needs at least two numeric metrics." : "No participants available for UMAP.");
+      return;
+    }
+
+    if (!wantsRecompute) {
+      plotEmbedding(window.UMAP_STATE.embedding, rows);
     }
   };
 
@@ -1033,42 +1242,92 @@
     const d = (window.RADQY_CONFIG && window.RADQY_CONFIG.umapDefaults) || {};
     const elC  = document.getElementById("umap_components");
     const elN  = document.getElementById("umap_neighbors");
-    const elM  = document.getElementById("umap_metric");
     const elMD = document.getElementById("umap_mindist");
     const elS  = document.getElementById("umap_spread");
-    if (elM && d.distanceOptions){
-      elM.innerHTML = d.distanceOptions.map(v => `<option value="${v}">${v}</option>`).join("");
+    const metricBtn  = document.getElementById("umapMetricBtn");
+    const metricMenu = document.getElementById("umapMetricMenu");
+    const metricOptions = (d.distanceOptions && d.distanceOptions.length)
+      ? d.distanceOptions.slice()
+      : ["Euclidean","Manhattan","Cosine","Hamming"];
+    let metricCurrent = window.UMAP_STATE.distanceFn || d.distanceFn || metricOptions[0];
+    function buildMetricMenu(){
+      if (!metricMenu || !metricBtn) return;
+      metricMenu.innerHTML = "";
+      metricBtn.textContent = metricCurrent;
+      metricOptions.forEach(opt=>{
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "menu-item" + (opt === metricCurrent ? " is-active" : "");
+        const label = document.createElement("span");
+        label.textContent = opt;
+        item.appendChild(label);
+        item.addEventListener("click", ()=>{
+          metricCurrent = opt;
+          metricBtn.textContent = opt;
+          metricMenu.classList.remove("is-open");
+          renderIfAllowed({
+            distanceFn: metricCurrent,
+            nComponents: Number(elC?.value ?? 2),
+            nNeighbors:  Number(elN?.value ?? 15),
+            minDist:     Number(elMD?.value ?? 0.1),
+            spread:      Number(elS?.value ?? 1),
+            recompute:   true
+          }, "hyperparam");
+        });
+        metricMenu.appendChild(item);
+      });
+    }
+    if (metricBtn && metricMenu){
+      metricBtn.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        metricMenu.classList.toggle("is-open");
+      });
+      document.addEventListener("click", ()=> metricMenu.classList.remove("is-open"));
+      buildMetricMenu();
     }
     if (elC)  elC.value  = d.nComponents ?? 2;
     if (elN)  elN.value  = d.nNeighbors  ?? 15;
-    if (elM)  elM.value  = d.distanceFn  ?? "Euclidean";
     if (elMD) elMD.value = d.minDist     ?? 0.1;
     if (elS)  elS.value  = d.spread      ?? 1;
     const sync = () => {
-      window.renderUMAP({
+      renderIfAllowed({
         nComponents: Number(elC.value),
         nNeighbors:  Number(elN.value),
-        distanceFn:  elM.value,
+        distanceFn:  metricCurrent,
         minDist:     Number(elMD.value),
         spread:      Number(elS.value),
         recompute:   true
-      });
+      }, "hyperparam");
     };
-    [elC, elN, elM, elMD, elS].forEach(el => el && el.addEventListener("change", sync));
+    [elC, elN, elMD, elS].forEach(el => el && el.addEventListener("change", sync));
     sync();
   }
 
   document.addEventListener("DOMContentLoaded", initControls);
-  document.addEventListener("radqy:data:ready", ()=> window.renderUMAP({recompute:true}));
+  document.addEventListener("radqy:data:ready", ()=> renderIfAllowed({recompute:true},"init"));
   document.addEventListener("radqy:data:updated", (e)=>{
     const det = e && e.detail ? e.detail : {};
-    if (det && det.skipUMAP) return;
-    window.renderUMAP({recompute:true});
+    const what = det.what || "";
+    const isMetricChange = what === "add_column" || what === "update_column";
+    const isParticipantChange = what === "delete" || what === "add_row";
+    const selectionOnly = what === "row-select";
+    if (selectionOnly) return;
+    if (det && det.skipUMAP && !isMetricChange) return;
+    const shouldRecompute = det.forceUMAP || isMetricChange || isParticipantChange || !what;
+    if (shouldRecompute) {
+      renderIfAllowed({recompute:true},"data");
+    }
   });
-  document.addEventListener("radqy:view:columns", ()=> window.renderUMAP({recompute:true}));
-  document.addEventListener("radqy:colorby:changed", ()=> window.renderUMAP());
+  document.addEventListener("radqy:view:columns", ()=>{
+    scheduleRender({recompute:true},"metrics");
+  });
+  document.addEventListener("radqy:table:updated", ()=>{
+    scheduleRender({recompute:true},"metrics");
+  });
+  document.addEventListener("radqy:colorby:changed", ()=> restyleMarkers(-1));
   document.addEventListener("radqy:selection-changed", ()=>{
     selectedPoints = Array.from(selectionSet());
+    setSelectedOverlay();
     restyleMarkers(-1);
     toggleLabelByVisibility();
     moveModebarToRail();

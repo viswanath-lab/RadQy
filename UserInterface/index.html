@@ -171,10 +171,11 @@
           <label class="ctl-label" for="umap_neighbors">nNeighbors</label>
           <input id="umap_neighbors" name="umap_neighbors" class="ctrlsm" type="number" min="1">
 
-          <label class="ctl-label" for="umap_metric">distanceFn</label>
-          <span class="select-wrap hasmenu">
-            <select id="umap_metric" name="umap_metric" class="ctrlsm"></select>
-          </span>
+          <label class="ctl-label" for="umapMetricBtn">distanceFn</label>
+          <div class="umap-metric-dropdown umap-metric-select">
+            <button id="umapMetricBtn" class="ctrlsm umap-metric-btn hasmenu" type="button"></button>
+            <div id="umapMetricMenu" class="umap-metric-menu"></div>
+          </div>
 
           <label class="ctl-label" for="umap_mindist">minDist</label>
           <input id="umap_mindist" name="umap_mindist" class="ctrlsm" type="number" step="0.01">

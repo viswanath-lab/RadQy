@@ -123,14 +123,81 @@
   box-shadow:var(--shadow-1);
 }
 .select-wrap.hasmenu::after{
-  content:"▾";
+  content:"";
   position:absolute;
-  right:8px; top:60%;
-  transform:translateY(-50%);
+  right:10px;
+  top:50%;
+  width:0;
+  height:0;
+  border-left:4px solid transparent;
+  border-right:4px solid transparent;
+  border-top:5px solid var(--color-umap-metric, var(--color-emory-blue));
+  transform:translateY(-35%);
   pointer-events:none;
-  color:var(--color-emory-blue);
-  font-size:16px;
-  line-height:1;
+}
+
+/* distanceFn caret uses distinct color */
+.umap-metric-select::after{
+  border-top-color: var(--color-umap-metric, var(--color-emory-blue)) !important;
+}
+
+/* Custom dropdown for distanceFn */
+.umap-metric-dropdown{
+  position:relative;
+  display:inline-block;
+  width:105px;
+}
+.umap-metric-btn{
+  width:100%;
+  text-align:left;
+  padding-right:22px;
+  position:relative;
+}
+.umap-metric-btn.hasmenu::after{
+  content:"";
+  position:absolute;
+  right:8px;
+  top:50%;
+  width:0;
+  height:0;
+  border-left:4px solid transparent;
+  border-right:4px solid transparent;
+  border-top:5px solid var(--color-umap-metric, var(--color-emory-blue));
+  transform:translateY(-35%);
+  pointer-events:none;
+}
+.umap-metric-menu{
+  position:absolute;
+  top:100%;
+  left:0;
+  min-width:100%;
+  background:#ffffff;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  box-shadow:0 4px 8px rgba(15,23,42,0.12);
+  padding:4px 0;
+  z-index:12000;
+  display:none;
+}
+.umap-metric-menu.is-open{
+  display:block;
+}
+.umap-metric-menu .menu-item{
+  width:100%;
+  padding:6px 10px;
+  text-align:left;
+  font-size:10px;
+  background:#ffffff;
+  border:none;
+  color:var(--color-text);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.umap-metric-menu .menu-item:hover,
+.umap-metric-menu .menu-item.is-active{
+  background:var(--color-umap-metric, var(--color-emory-blue));
+  color:#fff;
 }
 
 #panelumap .ctrlsm[type="number"]{
@@ -174,6 +241,11 @@
 }
 #umaphost canvas{
   overflow:hidden !important;
+}
+.umap-placeholder{
+  padding:12px;
+  color:#6b7280;
+  font-size:13px;
 }
 
 /* Dedicated rail for the Plotly modebar, to the right of the plot */

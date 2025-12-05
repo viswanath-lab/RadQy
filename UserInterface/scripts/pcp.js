@@ -594,6 +594,7 @@ function broadcastDataUpdated(what){
       } else {
         PARAC_SVG.selectAll('.pcp-part-tick[data-case="'+caseName+'"]').classed("pcp-hover-target-tick", true);
       }
+      bringLineToFront(caseName);
     }
 
     // show zoomed P# label on hover
