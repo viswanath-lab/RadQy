@@ -84,11 +84,11 @@ body.layout-report-split .grid{
 /* Right column: report fixed in the half-page view */
 body.layout-report-split #panelreport{
   grid-column: 2 / 3;          /* right column */
-  align-self: flex-start;      /* stick to top of column */
-  position: sticky;
-  top: 96px;                   /* just under header – tweak if needed */
-  max-height: calc(100vh - 96px);
-  overflow: auto;
+  align-self: flex-start;
+  position: relative;
+  top: 0;
+  max-height: none;
+  overflow: visible;
   margin: 0;
   padding: 0;
 }
@@ -99,4 +99,217 @@ body.layout-report-split #panellegend.panelthin{
   width: max-content;     /* box shrinks to just fit its contents      */
   padding: 1px 8px;       /* smaller padding so the bar is not tall    */
   margin-top: 0;          /* keep it tight under the tags row          */
+}
+
+/* Report modal */
+.report-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.report-modal{
+  background:#fff;
+  border-radius:16px;
+  box-shadow:0 14px 40px rgba(0,0,0,0.16);
+  min-width:320px;
+  max-width:480px;
+  width:min(88vw, 480px);
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  border:1px solid var(--color-border);
+}
+.report-modal-title{
+  font-size:16px;
+  font-weight:700;
+  color:var(--color-emory-blue);
+}
+.report-modal-desc{
+  margin:0;
+  font-size:13px;
+  color:var(--color-text);
+}
+.report-modal-form{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.report-modal-form label{
+  font-size:12px;
+  color:var(--color-text);
+}
+.report-modal-form input[type="password"],
+.report-modal-form input[type="text"]{
+  width:100%;
+  max-width:420px;
+  height:36px;
+  padding:8px 10px;
+  border:1px solid var(--color-border);
+  border-radius:10px;
+  font-size:14px;
+  box-sizing:border-box;
+}
+.report-modal-save{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  color:var(--color-text);
+}
+.report-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+/* Status + spinner */
+.report-layout{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.report-header{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding:6px 6px 0;
+}
+.report-title{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+  color:var(--color-emory-blue);
+  text-align:center;
+   font-family: "Crimson Pro","Open Sans",serif;
+}
+.report-divider{
+  width:40%;
+  height:2px;
+  background:var(--color-border);
+  margin:6px 0;
+}
+.report-status{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  color:var(--color-text);
+}
+.report-status-inline{
+  background:#f8fafc;
+  border:1px solid var(--color-border);
+  border-radius:999px;
+  padding:4px 10px;
+}
+.report-status.is-ready{
+  color:var(--color-emory-blue);
+}
+.report-status.is-error{
+  color:var(--color-danger, #b42318);
+}
+.report-spinner{
+  width:14px;
+  height:14px;
+  border:2px solid #d1d5db;
+  border-top-color: var(--color-emory-blue);
+  border-radius:50%;
+  animation: rqy-spin 0.9s linear infinite;
+}
+@keyframes rqy-spin{
+  from { transform: rotate(0); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Chat */
+.report-chat{
+  margin-top:10px;
+  border:1px solid var(--color-border);
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:var(--shadow-1);
+  display:flex;
+  flex-direction:column;
+  min-height:260px;
+}
+.report-chat-header{
+  padding:8px 10px 0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.report-chat-title{
+  font-size:20px;
+  font-weight:700;
+  color:var(--color-emory-blue);
+  text-align:center;
+  margin:0;
+  font-family: "Crimson Pro","Open Sans",serif;
+}
+.report-chat-log{
+  flex:1 1 auto;
+  padding:10px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.report-chat-row{
+  padding:8px 10px;
+  border-radius:10px;
+  font-size:13px;
+  max-width:88%;
+}
+.report-chat-user{
+  align-self:flex-end;
+  background:var(--color-emory-blue);
+  color:#fff;
+}
+.report-chat-assistant{
+  align-self:flex-start;
+  background:#f1f5f9;
+  color:var(--color-text);
+}
+.report-chat-status{
+  align-self:center;
+  background:transparent;
+  color:var(--color-text);
+  font-style:italic;
+  padding:0;
+}
+.report-chat-form{
+  display:flex;
+  gap:8px;
+  padding:8px;
+  border-top:1px solid var(--color-border);
+}
+.report-body{
+  border:1px solid var(--color-border);
+  border-radius:12px;
+  padding:12px;
+  background:#fff;
+  min-height:140px;
+  box-shadow:var(--shadow-1);
+}
+.report-placeholder{
+  font-size:13px;
+  color:var(--color-text);
+  opacity:0.7;
+  text-align:center;
+}
+.report-chat-input{
+  flex:1 1 auto;
+  height:32px;
+  border:1px solid var(--color-border);
+  border-radius:8px;
+  padding:6px 10px;
+  font-size:13px;
 }
