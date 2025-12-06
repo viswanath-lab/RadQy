@@ -1,0 +1,45 @@
+# Please add your specific tags to this yaml file. 
+# MRI DICOM Metadata Abbreviations
+
+#Patient:
+#  Patient Sex: SEX
+#  Patient Birth Date: DOB
+#  Patient Age: AGE
+#  Patient Weight: WT
+
+#Study:
+#  Study Date: SDAT
+#  Study Time: STIM
+#  Study Description: SDESC
+#  Study Instance UID: SUID
+#  Accession Number: ACCN
+
+#Series:
+#  Series Instance UID: SRUID
+#  Series Number: SNUM
+#  Series Description: SDES
+#  Modality: MOD
+#  Protocol Name: PRT
+#  Body Part Examined: BP
+
+Acquisition:
+  Manufacturer: MFR
+#  Manufacturer Model Name: MODN
+  Magnetic Field Strength: B0
+  Repetition Time: TR
+  Echo Time: TE
+#  Inversion Time: TI
+#  Flip Angle: FA
+#  Echo Train Length: ETL
+#  Bits Allocated: BIT
+  Rows: ROW
+  Columns: COL
+  Pixel Spacing:
+    - VRX
+    - VRY
+  Slice Thickness: VRZ
+#  Spacing Between Slices: SBS
+  
+  
+
+

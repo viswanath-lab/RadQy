@@ -1,0 +1,3 @@
+\contentsline {section}{Introduction}{1}{section*.2}%
+\contentsline {section}{\numberline {1}Signal-to-Noise Ratio (SNR)}{1}{section.1}%
+\contentsline {section}{References}{1}{section*.3}%

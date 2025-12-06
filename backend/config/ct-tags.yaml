@@ -1,0 +1,68 @@
+# Please add your specific tags to this yaml file.
+# CT DICOM Metadata Abbreviations
+
+Patient:
+  Patient Sex: SEX
+  Patient Birth Date: DOB
+  Patient Age: AGE
+  Patient Weight: WT
+
+Study:
+  Study Date: SDAT
+  Study Time: STIM
+  Study Description: SDESC
+  Study Instance UID: SUID
+  Accession Number: ACCN
+
+Series:
+  Series Instance UID: SRUID
+  Series Number: SNUM
+  Series Description: SDES
+  Modality: MOD
+  Protocol Name: PRT
+  Body Part Examined: BP
+
+Acquisition:
+  Manufacturer: MFR
+  Manufacturer Model Name: MODN
+  KVP: KVP
+  Tube Current mA: MA
+  Exposure mAs: MAS
+  Exposure Time ms: ETIM
+  Rotation Time s: ROT
+  Pitch Factor: PITCH
+  Spiral Pitch Factor: SPIT
+  Gantry Detector Tilt: GDT
+  Table Height: TBH
+  Data Collection Diameter: DCD
+  Reconstruction Diameter: RDIA
+  Field of View: FOV
+  Convolution Kernel: KERN
+  Reconstruction Algorithm: RALG
+  Iterative Recon Level: IRLV
+  Tube Current Modulation: TCM
+  Exposure Modulation Type: EMT
+  Focal Spot: FS
+  Bits Allocated: BIT
+  Rows: ROW
+  Columns: COL
+  Pixel Spacing:
+    - VRX
+    - VRY
+  Slice Thickness: VRZ
+  Spacing Between Slices: SBS
+
+Dose:
+  CTDIvol mGy: CTDI
+  DLP mGycm: DLP
+  Total Dose Length Product mGycm: TDLP
+
+Contrast:
+  Contrast Bolus Agent: CBA
+  Contrast Bolus Volume ml: CBV
+  Contrast Flow Rate ml_s: CFR
+  Contrast Start Time: CST
+
+Timing:
+  Acquisition Time: ATIM
+  Reconstruction Time: RTIM

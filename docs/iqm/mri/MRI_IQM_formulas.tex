@@ -1,0 +1,60 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{xcolor}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=red]{hyperref}
+\usepackage[backend=biber,style=numeric,sorting=none,doi=false,url=false]{biblatex}
+\addbibresource{references.bib}
+\newcommand{\biblinklabel}[1]{%
+  \iffieldundef{url}
+    {\iffieldundef{doi}{#1}{\href{https://doi.org/\thefield{doi}}{#1}}}
+    {\href{\thefield{url}}{#1}}}
+% Bibliography labels: red number hyperlinked, brackets applied only once
+\DeclareFieldFormat{labelnumber}{\biblinklabel{\textcolor{red}{#1}}}
+\DeclareFieldFormat{labelnumberwidth}{\mkbibbrackets{\biblinklabel{\textcolor{red}{#1}}}}
+% In-text \cite uses red, bracketed numeric labels linked to bibliography
+\DeclareCiteCommand{\cite}
+  {\usebibmacro{prenote}}
+  {\mkbibbrackets{\printtext[bibhyperref]{\textcolor{red}{\thefield{labelnumber}}}}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\title{MRI Image Quality Metrics (IQMs)}
+\author{RadQy Project}
+\date{\today}
+
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document summarizes commonly used MRI image quality metrics (IQMs) and their mathematical definitions for reproducibility and reporting.
+\end{abstract}
+\tableofcontents
+\bigskip
+
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+This document summarizes commonly used MRI image quality metrics (IQMs) and their mathematical definitions for reproducibility and reporting.
+
+\section{Signal-to-Noise Ratio (SNR)}
+\begin{equation}
+\text{SNR} = \frac{\mu_{\text{signal}}}{\sigma_{\text{noise}}}
+\end{equation}
+
+
+where $\mu_{\text{signal}}$ is the mean intensity in the signal region and $\sigma_{\text{noise}}$ is the standard deviation in a background noise region.
+
+\cite{elad2010sparse}
+
+
+% \section*{Meta Note}
+% These metrics correspond to imaging physics QC literature and tools such as MRQy, MRIQC, ACR phantom procedures, and RadQy internal implementation.
+
+
+%% REFERENCES %%%%%%%%%%%%%%%%%%%%%
+\printbibliography[heading=bibintoc,title={References}]
+\end{document}
