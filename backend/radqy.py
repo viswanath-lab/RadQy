@@ -2,23 +2,29 @@ import argparse
 import os
 import datetime
 from pathlib import Path
-import pandas as pd
-import pydicom
-import yaml
-from pydicom.multival import MultiValue
-from pydicom.errors import InvalidDicomError
 import sys
 import time
 import re
-import numpy as np
-from PIL import Image as PILImage
-import importlib.util
-import importlib
 from collections import defaultdict
 from typing import List
-from AdaptiveBorderSeg import make_masks
-from iqms_mri import get_iqm_functions
+import importlib.util
+import importlib
 import warnings
+
+# Ensure repo root is on sys.path when executed as a script
+THIS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = THIS_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+import numpy as np
+import pandas as pd
+import pydicom
+import yaml
+from PIL import Image as PILImage
+from pydicom.multival import MultiValue
+from pydicom.errors import InvalidDicomError
+from backend.iqm.mri import get_iqm_registry
 warnings.filterwarnings("ignore", message=".*maximum length of 16 allowed for VR SH.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -65,6 +71,17 @@ def load_segmenter_from_file(path: str):
         return wrapper
     else:
         raise AttributeError(f"{path} does not define make_masks() or segment().")
+
+def load_default_segmenter():
+    """
+    Load the default MRI segmentation function from backend/seg/mri.
+    Returns a callable and a human-readable name.
+    """
+    try:
+        from backend.seg.mri.AdaptiveBorderSeg import make_masks as default_masks
+    except ImportError:
+        from seg.mri.AdaptiveBorderSeg import make_masks as default_masks  # type: ignore
+    return default_masks, "Default: AdaptiveBorderSeg"
 
 def _read_float32_slice(ds):
     """Convert DICOM pixel data to float32 array with RescaleSlope/Intercept applied."""
@@ -154,7 +171,7 @@ def export_pngs_for_participants(df_source: pd.DataFrame, out_root: Path):
             fname = f"{idx:04d}_{study}_{series}_{inst}.png"
 
             try:
-                Image.fromarray(img).save(part_dir / fname)
+                PILImage.fromarray(img).save(part_dir / fname)
             except Exception:
                 # skip silently if save fails
                 pass
@@ -265,6 +282,8 @@ def read_headers(root: Path, tag_dict):
             except (InvalidDicomError, OSError, PermissionError):
                 continue
             count += 1
+            if getattr(read_headers, "_verbose", False):
+                status_print(f"[headers] {count}: {p}")
             meta = extract_metadata(ds, tag_dict)
             study_uid = s(getattr(ds, "StudyInstanceUID", ""))
             series_uid = s(getattr(ds, "SeriesInstanceUID", ""))
@@ -331,6 +350,7 @@ def main():
     ap.add_argument("--num-samples", type=int, default=1)
     ap.add_argument("--save-fgbg", action="store_true",help="If set, save per-participant foreground/background masks.")
     ap.add_argument("--segmenter", type=str, default="", help="Optional: path to a .py segmentation file (e.g. 'amir.py').")
+    ap.add_argument("--verbose", action="store_true", help="Print per-file processing progress.")
 
     args = ap.parse_args()
 
@@ -339,40 +359,48 @@ def main():
         segmenter_fn = load_segmenter_from_file(args.segmenter)
         segmenter_name = Path(args.segmenter).stem
     else:
-        from AdaptiveBorderSeg import make_masks as segmenter_fn
-        segmenter_name = "Default: AdaptiveBorderSeg"
-
-
+        segmenter_fn, segmenter_name = load_default_segmenter()
 
     # Start print
     starting_banner(args.scantype)
 
     script_dir = Path(__file__).parent
-    yaml_path = script_dir / "MRI_TAGS.yaml"
+    config_dir = script_dir / "config"
+    tag_files = {
+        "mri": "mri-tags.yaml",
+        "ct": "ct-tags.yaml",
+    }
+    yaml_filename = tag_files.get(args.scantype.strip().lower(), "mri-tags.yaml")
+    yaml_path = config_dir / yaml_filename
     if not yaml_path.exists():
-        raise FileNotFoundError(f"MRI_TAGS.yaml not found in {script_dir}")
+        raise FileNotFoundError(f"{yaml_filename} not found under {config_dir}")
 
     root = Path(args.inputdir).expanduser().resolve()
     folder_name = root.name
 
-    out_dir = script_dir / "UserInterface" / "Data" / folder_name
+    out_dir = script_dir / "frontend" / "Data" / folder_name
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "results.tsv"
 
     # Load YAML and data
     tag_dict, abbr_order = read_yaml(yaml_path)
+    # configure header scan verbosity
+    read_headers._verbose = args.verbose  # type: ignore[attr-defined]
+    read_headers._progress_every = 200 if not args.verbose else 0  # type: ignore[attr-defined]
     df, _ = read_headers(root, tag_dict)
 
-    iqm_funcs = get_iqm_functions()
+    iqm_registry = get_iqm_registry()
+    iqm_funcs = [entry["func"] for entry in iqm_registry]
+    iqm_names = [entry["name"] for entry in iqm_registry]
     total_iqms_per_participant = len(iqm_funcs)
-    # discover column names once by calling each IQM with empty arrays
-    iqm_names = []
-    for fn in iqm_funcs:
-        name, _ = fn(np.array([], dtype=np.float32), np.array([], dtype=np.float32))
-        iqm_names.append(str(name))
 
     # we will build the final table incrementally, one row per participant
     table_rows = []
+    # global counters
+    total_participants_processed = 0
+    total_thumbs_saved = 0
+    total_fg_saved = 0
+    total_bg_saved = 0
 
 
 
@@ -457,6 +485,8 @@ def main():
                 ds = pydicom.dcmread(dcm_path, stop_before_pixels=False, force=True)
             except Exception:
                 continue
+            if args.verbose:
+                status_print(f"[slice] {dcm_path}")
 
             # Thumbnail (uint8) from DICOM
             img_u8 = dcm_to_uint8(ds)
@@ -558,6 +588,10 @@ def main():
             n = iqm_n.get(name, 0)
             row[name] = (iqm_sum[name] / n) if n > 0 else float("nan")
         table_rows.append(row)
+        total_participants_processed += 1
+        total_thumbs_saved += saved_thumbs
+        total_fg_saved += saved_fg
+        total_bg_saved += saved_bg
 
 
 
@@ -620,6 +654,12 @@ def main():
     print(table.to_string(index=False))
     print(f"\nSaved: {out_path}")
 
+    status_print(
+        f"Summary: participants processed={total_participants_processed}, "
+        f"thumbnails saved={total_thumbs_saved}, "
+        f"foreground masks saved={total_fg_saved}, "
+        f"background masks saved={total_bg_saved}"
+    )
     status_print(f"\nRadQy took {elapsed_str} to run.")
 
 if __name__ == "__main__":

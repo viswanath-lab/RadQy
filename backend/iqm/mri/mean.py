@@ -1,3 +1,9 @@
+import numpy as np
+
+DESCRIPTION = (
+    "Foreground mean intensity; nan-aware and returns NaN when foreground is empty."
+)
+
 def mean(fg, bg=None):
     """
     MRI IQM: Foreground Mean Intensity
