@@ -378,7 +378,8 @@ def main():
     root = Path(args.inputdir).expanduser().resolve()
     folder_name = root.name
 
-    out_dir = script_dir / "frontend" / "Data" / folder_name
+    # Place outputs under the top-level frontend/Data/<dataset>
+    out_dir = REPO_ROOT / "frontend" / "Data" / folder_name
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "results.tsv"
 
@@ -651,7 +652,7 @@ def main():
             f.write(line + "\n")
         table.to_csv(f, sep="\t", index=False)
 
-    print(table.to_string(index=False))
+    print(table.drop(columns=["Images"]).to_string(index=False))
     print(f"\nSaved: {out_path}")
 
     status_print(
