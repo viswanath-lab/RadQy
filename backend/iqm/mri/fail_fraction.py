@@ -1,46 +1,40 @@
-import numpy as np
-
 DESCRIPTION = (
-    "Fraction of non-finite values (NaN/inf) across foreground/background pixels; "
-    "higher values flag poor foreground detection or corrupted slices."
+    "Count of non-finite IQM values (NaN/inf) across computed metrics per participant; "
+    "higher values flag poor FG/BG or noisy slices."
 )
 
 
-def fail_fraction(fg, bg=None):
+def fail_fraction_from_metrics(metric_values: dict, metric_names: list[str]):
     """
-    MRI IQM: Failure Fraction
-
-    Computes the proportion of non-finite values in the provided foreground and
-    background pixel arrays. The metric is nan-aware and returns NaN when no
-    foreground values are available.
+    Participant-level FAIL_FRAC: count of IQMs that are non-finite.
 
     Parameters
     ----------
-    fg : np.ndarray
-        Foreground pixel values (1D or 2D flattened).
-    bg : np.ndarray, optional
-        Background pixel values; included in the denominator when present.
+    metric_values : dict
+        Mapping of metric name -> aggregated value for a participant.
+    metric_names : list[str]
+        Names of IQMs to include in the calculation (excluding FAIL_FRAC itself).
 
     Returns
     -------
     name : str
-        Short metric identifier.
-    measure : float
-        Fraction of non-finite values, or NaN if undefined.
+        "FAIL_FRAC"
+    measure : int or float
+        Count of IQMs that are NaN/inf/non-finite, or NaN if undefined.
     """
     name = "FAIL_FRAC"
-
-    if fg is None or fg.size == 0:
+    total = len(metric_names)
+    if total == 0:
         return name, float("nan")
 
-    samples = [fg.ravel()]
-    if bg is not None and getattr(bg, "size", 0) > 0:
-        samples.append(bg.ravel())
+    invalid = 0
+    for n in metric_names:
+        val = metric_values.get(n, float("nan"))
+        try:
+            v = float(val)
+        except Exception:
+            v = float("nan")
+        if not np.isfinite(v):
+            invalid += 1
 
-    stacked = np.concatenate(samples) if samples else np.array([], dtype=np.float32)
-    if stacked.size == 0:
-        return name, float("nan")
-
-    invalid_mask = ~np.isfinite(stacked)
-    frac = invalid_mask.sum() / stacked.size
-    return name, float(frac)
+    return name, int(invalid)

@@ -24,7 +24,7 @@ import yaml
 from PIL import Image as PILImage
 from pydicom.multival import MultiValue
 from pydicom.errors import InvalidDicomError
-from backend.iqm.mri import get_iqm_registry
+from backend.iqm.mri import get_iqm_registry, compute_fail_fraction
 warnings.filterwarnings("ignore", message=".*maximum length of 16 allowed for VR SH.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -391,9 +391,9 @@ def main():
     df, _ = read_headers(root, tag_dict)
 
     iqm_registry = get_iqm_registry()
-    iqm_funcs = [entry["func"] for entry in iqm_registry]
+    iqm_funcs = [entry["func"] for entry in iqm_registry]  # per-slice IQMs
     iqm_names = [entry["name"] for entry in iqm_registry]
-    total_iqms_per_participant = len(iqm_funcs)
+    total_iqms_per_participant = len(iqm_names) + 1  # +1 for FAIL_FRAC
 
     # we will build the final table incrementally, one row per participant
     table_rows = []
@@ -523,7 +523,7 @@ def main():
                         m = float(measure)
                     except Exception:
                         m = float("nan")
-                    if not np.isnan(m):
+                    if np.isfinite(m):
                         iqm_sum[name] += m
                         iqm_n[name]   += 1
 
@@ -567,16 +567,18 @@ def main():
             tag_idx += 1
 
         # IQMs from online accumulators
-        iq_idx = 1
-        for name in iqm_names:
-            n = iqm_n.get(name, 0)
-            avg_val = (iqm_sum[name] / n) if n > 0 else float("nan")
-            status_print(f"{tag_idx:>{len(str(total_iqms_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {name}= {avg_val}")
-            tag_idx += 1
-            iq_idx += 1
+    iq_idx = 1
+    for name in iqm_names:
+        n = iqm_n.get(name, 0)
+        avg_val = (iqm_sum[name] / n) if n > 0 else float("nan")
+        status_print(f"{tag_idx:>{len(str(total_metrics_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {name}= {avg_val}")
+        tag_idx += 1
+        iq_idx += 1
+    if all(iqm_n.get(name, 0) == 0 for name in iqm_names):
+        status_print(f"[warning] No finite IQM values for participant {pid}; all IQMs set to NaN.")
 
-        # finalize and append row to final table
-        row_key = f"{top}--{sub}--{pid}"
+    # finalize and append row to final table
+    row_key = f"{top}--{sub}--{pid}"
         row = {
             "#": idx,
             "Participant (topfolder--subfolder--patient ID)": row_key,
@@ -588,6 +590,11 @@ def main():
         for name in iqm_names:
             n = iqm_n.get(name, 0)
             row[name] = (iqm_sum[name] / n) if n > 0 else float("nan")
+        # Participant-level FAIL_FRAC across IQMs
+        fail_name, fail_val = compute_fail_fraction(row, iqm_names)
+        fail_display = int(fail_val) if np.isfinite(fail_val) else fail_val
+        status_print(f"{tag_idx:>{len(str(total_metrics_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {fail_name}= {fail_display}")
+        row[fail_name] = fail_display
         table_rows.append(row)
         total_participants_processed += 1
         total_thumbs_saved += saved_thumbs
@@ -604,7 +611,7 @@ def main():
         ["#", "Participant (topfolder--subfolder--patient ID)", "NSL"]
         + list(abbr_order)
         + list(iqm_names)
-        + ["Images"]
+        + ["FAIL_FRAC", "Images"]
     )
     table = pd.DataFrame(table_rows)
     # ensure all expected columns exist (in case some IQMs/tags missing for some participants)
@@ -612,6 +619,11 @@ def main():
         if c not in table.columns:
             table[c] = np.nan if c in iqm_names else ""
     table = table[cols]
+    # cast FAIL_FRAC to int-like string (no decimals) for output
+    if "FAIL_FRAC" in table.columns:
+        table["FAIL_FRAC"] = table["FAIL_FRAC"].apply(
+            lambda x: "" if pd.isna(x) else int(x)
+        )
     # prepend 'P' before the patient number in the first column
     table.rename(columns={"#": "P#"}, inplace=True)
     table["P#"] = table["P#"].apply(lambda x: f"P{x}")
@@ -631,7 +643,7 @@ def main():
 
     # create header lines for tags and IQMs
     tag_names_list = ["NSL"] + abbr_order
-    iqm_names_list = iqm_names
+    iqm_names_list = iqm_names + ["FAIL_FRAC"]
     tag_line = f"#tags ({total_tags_per_participant}): " + ", ".join(f"{i+1}. {name}" for i, name in enumerate(tag_names_list))
     iqm_line = f"#iqms ({total_iqms_per_participant}): " + ", ".join(f"{i+1}. {name}" for i, name in enumerate(iqm_names_list))
     header_lines = [
