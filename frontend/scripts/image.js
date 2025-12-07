@@ -8,17 +8,17 @@
 
   // Derive base directory for images: prefer run outdir, fall back to legacy path
   function getLegacyRoot(dataset) {
-    const path = window.location.pathname; // e.g., /UserInterface/index.html
-    const key = "/UserInterface";
+    const path = window.location.pathname; // e.g., /frontend/index.html
+    const key = "/frontend";
     const idx = path.indexOf(key);
     const root = idx === -1 ? "" : path.slice(0, idx);
     const safeDataset = (dataset || "").trim();
-    return `${root}/UserInterface/Data/${safeDataset}/`;
+    return `${root}/frontend/Data/${safeDataset}/`;
   }
 
   function toWebPath(absPath) {
     if (!absPath) return "";
-    const idx = absPath.indexOf("/UserInterface/");
+    const idx = absPath.indexOf("/frontend/");
     if (idx === -1) return "";
     return absPath.slice(idx);
   }

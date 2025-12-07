@@ -567,18 +567,18 @@ def main():
             tag_idx += 1
 
         # IQMs from online accumulators
-    iq_idx = 1
-    for name in iqm_names:
-        n = iqm_n.get(name, 0)
-        avg_val = (iqm_sum[name] / n) if n > 0 else float("nan")
-        status_print(f"{tag_idx:>{len(str(total_metrics_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {name}= {avg_val}")
-        tag_idx += 1
-        iq_idx += 1
-    if all(iqm_n.get(name, 0) == 0 for name in iqm_names):
-        status_print(f"[warning] No finite IQM values for participant {pid}; all IQMs set to NaN.")
+        iq_idx = 1
+        for name in iqm_names:
+            n = iqm_n.get(name, 0)
+            avg_val = (iqm_sum[name] / n) if n > 0 else float("nan")
+            status_print(f"{tag_idx:>{len(str(total_metrics_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {name}= {avg_val}")
+            tag_idx += 1
+            iq_idx += 1
+        if all(iqm_n.get(name, 0) == 0 for name in iqm_names):
+            status_print(f"[warning] No finite IQM values for participant {pid}; all IQMs set to NaN.")
 
-    # finalize and append row to final table
-    row_key = f"{top}--{sub}--{pid}"
+        # finalize and append row to final table
+        row_key = f"{top}--{sub}--{pid}"
         row = {
             "#": idx,
             "Participant (topfolder--subfolder--patient ID)": row_key,
