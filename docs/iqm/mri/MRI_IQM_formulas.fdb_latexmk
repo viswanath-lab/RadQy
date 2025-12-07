@@ -1,12 +1,13 @@
 # Fdb version 4
-["biber MRI_IQM_formulas"] 1765110355.48295 "MRI_IQM_formulas.bcf" "MRI_IQM_formulas.bbl" "MRI_IQM_formulas" 1765110359.76546 0
-  "MRI_IQM_formulas.bcf" 1765110359.70968 107686 8a4858bc199d01a95c5b665f4f0e91ea "pdflatex"
+["biber MRI_IQM_formulas"] 1765123816.23282 "MRI_IQM_formulas.bcf" "MRI_IQM_formulas.bbl" "MRI_IQM_formulas" 1765134279.2733 0
+  "MRI_IQM_formulas.bcf" 1765134279.21643 107824 4e824ff7f71addd8f23e4a22f099dd14 "pdflatex"
+  "references.bib" 1765123807.72731 893 0527f4feef0c9ce927dc638dff3bd3ff ""
   (generated)
   "MRI_IQM_formulas.bbl"
   "MRI_IQM_formulas.blg"
   (rewritten before read)
-["pdflatex"] 1765110358.97289 "/Users/amirsadri/Projects/RadQy/docs/iqm/mri/MRI_IQM_formulas.tex" "MRI_IQM_formulas.pdf" "MRI_IQM_formulas" 1765110359.76571 0
-  "/Users/amirsadri/Projects/RadQy/docs/iqm/mri/MRI_IQM_formulas.tex" 1765110354.36608 4462 ba98c0463345544231bd2d1f140f3c7b ""
+["pdflatex"] 1765134278.50227 "/Users/amirsadri/Projects/RadQy/docs/iqm/mri/MRI_IQM_formulas.tex" "MRI_IQM_formulas.pdf" "MRI_IQM_formulas" 1765134279.27355 0
+  "/Users/amirsadri/Projects/RadQy/docs/iqm/mri/MRI_IQM_formulas.tex" 1765134278.3217 6376 4cde8613df3860bcdfba781de5d1b3b2 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -27,6 +28,7 @@
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm" 1136768653 1124 6c73e740cf17375f03eec0ee63599741 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm" 1136768653 1116 933a60c408fc0a863a92debe84b2d294 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1136768653 1120 8b7d695260f3cff42e636090a8002094 ""
+  "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmti10.tfm" 1136768653 1480 aa8e34af0eb6a2941b776984cf1dfdc4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1248133631 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1248133631 32080 340ef9bf63678554ee606688e7b5339d ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb" 1248133631 30251 6afa5cb1d0204815a708a080681d4674 ""
@@ -39,6 +41,7 @@
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1248133631 32726 0a1aea6fcd6468ee2cf64d891f5c43c8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1248133631 32626 4f5c1b83753b1dd3a97d1b399a005b4b ""
+  "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb" 1248133631 37944 359e864bd06cde3b1cf57bb20757fb06 ""
   "/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/usr/local/texlive/2025/texmf-dist/tex/generic/atbegshi/atbegshi.sty" 1575674566 24708 5584a51a7101caf7e6bbf1fc27d8f7b1 ""
   "/usr/local/texlive/2025/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty" 1576625341 40635 c40361e206be584d448876bba8a64a3b ""
@@ -103,12 +106,12 @@
   "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1765040527 5467155 19efa205003f9ecad95fbbaa6ff24da1 ""
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1741450574 3345740 46b66fdb0378f7bf5921b5eabf1762b8 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "MRI_IQM_formulas.aux" 1765110359.70792 2444 f984648a0f9ff91b04df54a8ab99c4e7 "pdflatex"
-  "MRI_IQM_formulas.bbl" 1765110357.3911 466 76d65a242ec496c9b4361af646ff12cb "biber MRI_IQM_formulas"
-  "MRI_IQM_formulas.out" 1765110359.70869 2967 7767cdbcd17d68856db5380792e4ffc7 "pdflatex"
-  "MRI_IQM_formulas.run.xml" 1765110359.71044 2389 ff0b747aa0dfdfec9cb9d300daa8f875 "pdflatex"
-  "MRI_IQM_formulas.tex" 1765110354.36608 4462 ba98c0463345544231bd2d1f140f3c7b ""
-  "MRI_IQM_formulas.toc" 1765110359.71052 1468 c1b873629b9bd3d10c65e1d238a46763 "pdflatex"
+  "MRI_IQM_formulas.aux" 1765134279.21514 3341 18c9371cd5e866051b047856a24b2679 "pdflatex"
+  "MRI_IQM_formulas.bbl" 1765123817.43507 5751 05b3f6a0d794482a86380546766bfd4a "biber MRI_IQM_formulas"
+  "MRI_IQM_formulas.out" 1765134279.2157 3726 ef89c6d837e5d839f70a2a462e381695 "pdflatex"
+  "MRI_IQM_formulas.run.xml" 1765134279.21698 2389 ff0b747aa0dfdfec9cb9d300daa8f875 "pdflatex"
+  "MRI_IQM_formulas.tex" 1765134278.3217 6376 4cde8613df3860bcdfba781de5d1b3b2 ""
+  "MRI_IQM_formulas.toc" 1765134279.21703 1860 35b5aaf350425779a444c1c85b120971 "pdflatex"
   (generated)
   "MRI_IQM_formulas.aux"
   "MRI_IQM_formulas.bcf"

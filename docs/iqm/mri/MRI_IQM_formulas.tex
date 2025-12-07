@@ -41,7 +41,7 @@ This document summarizes commonly used MRI image quality metrics (IQMs) and thei
 This document summarizes commonly used MRI image quality metrics (IQMs) and their mathematical definitions for reproducibility and reporting.
 
 \section{Per-Slice IQMs (Foreground / Background pixels)}
-All metrics below accept foreground pixels $\mathbf{F}$ (from segmentation) and background pixels $\mathbf{B}$; NaN/Inf inputs yield NaN. When a denominator is zero or data are missing, the metric is NaN by construction.
+All metrics below accept foreground pixels $\mathbf{F}$ (from segmentation) and background pixels $\mathbf{B}$. NaN/Inf inputs yield NaN. For BG-dependent metrics (SNR1, SNR2, SNR4, CNR, CJV, FBER), if background is missing or unusable (empty, zero variance, non-finite), we fall back to foreground homogeneity $\mu_F/\sigma_F$ to avoid artificial NaNs.
 
 \subsection{Mean (MEAN)}
 Foreground mean intensity:
@@ -87,15 +87,23 @@ where $*$ is 2D convolution (foreground is median-filtered only when used for PS
 where $\hat{F}$ is either the background $\mathbf{B}$ (if provided) or a median-filtered version of $\mathbf{F}$.
 
 \subsection{SNR1}
-Ratio of foreground to background standard deviation:
+Foreground/background std; fallback to foreground stability if background unusable \cite{sadri2020mrqy, kushol2023dsmri}:
 \[
-\text{SNR1} = \frac{\sigma_F}{\sigma_B}
+\text{SNR1} =
+\begin{cases}
+\dfrac{\sigma_F}{\sigma_B}, & \sigma_B \text{ finite and } \sigma_B \neq 0\\[6pt]
+\dfrac{\mu_F}{\sigma_F}, & \text{otherwise (fg homogeneity)}
+\end{cases}
 \]
 
 \subsection{SNR2}
-Foreground mean over background standard deviation:
+Foreground mean over background std; fallback to foreground stability if background unusable:
 \[
-\text{SNR2} = \frac{\mu_F}{\sigma_B}
+\text{SNR2} =
+\begin{cases}
+\dfrac{\mu_F}{\sigma_B}, & \sigma_B \text{ finite and } \sigma_B \neq 0\\[6pt]
+\dfrac{\mu_F}{\sigma_F}, & \text{otherwise}
+\end{cases}
 \]
 
 \subsection{SNR3}
@@ -105,15 +113,23 @@ Foreground standard deviation divided by centered-foreground standard deviation 
 \]
 
 \subsection{SNR4}
-Foreground mean over background mean:
+Foreground mean over background mean; fallback to foreground stability if background unusable:
 \[
-\text{SNR4} = \frac{\mu_F}{\mu_B}
+\text{SNR4} =
+\begin{cases}
+\dfrac{\mu_F}{\mu_B}, & \mu_B \text{ finite and } \mu_B \neq 0\\[6pt]
+\dfrac{\mu_F}{\sigma_F}, & \text{otherwise}
+\end{cases}
 \]
 
 \subsection{Contrast-to-Noise Ratio (CNR)}
-Foreground/background mean difference over background standard deviation:
+Foreground/background mean difference over background std; fallback to foreground stability if background unusable:
 \[
-\text{CNR} = \frac{\mu_F - \mu_B}{\sigma_B}
+\text{CNR} =
+\begin{cases}
+\dfrac{\mu_F - \mu_B}{\sigma_B}, & \sigma_B \text{ finite and } \sigma_B \neq 0\\[6pt]
+\dfrac{\mu_F}{\sigma_F}, & \text{otherwise}
+\end{cases}
 \]
 
 \subsection{Patch Coefficient of Variation (CVP)}
@@ -123,9 +139,13 @@ Foreground patch coefficient of variation:
 \]
 
 \subsection{Coefficient of Joint Variation (CJV)}
-Joint variation between foreground and background:
+Joint variation between foreground and background; fallback to foreground stability if background unusable:
 \[
-\text{CJV} = \frac{\sigma_F + \sigma_B}{|\mu_F - \mu_B|}
+\text{CJV} =
+\begin{cases}
+\dfrac{\sigma_F + \sigma_B}{|\mu_F - \mu_B|}, & \text{finite and } |\mu_F - \mu_B| \neq 0\\[6pt]
+\dfrac{\mu_F}{\sigma_F}, & \text{otherwise}
+\end{cases}
 \]
 
 \subsection{Entropy Focus Criterion (EFC)}
@@ -137,9 +157,32 @@ p_i = \frac{F_i}{\sqrt{\sum_j F_j^2}}, \quad
 higher values suggest more ghosting/noise.
 
 \subsection{Foreground-Background Energy Ratio (FBER)}
-Median energy ratio:
+Median energy ratio; fallback to foreground stability if background unusable:
 \[
-\text{FBER} = \frac{\text{median}(F^2)}{\text{median}(B^2)}
+\text{FBER} =
+\begin{cases}
+\dfrac{\text{median}(F^2)}{\text{median}(B^2)}, & \text{finite and } \text{median}(B^2)\neq 0\\[6pt]
+\dfrac{\mu_F}{\sigma_F}, & \text{otherwise}
+\end{cases}
+\]
+
+\subsection{Skewness (SKW)}
+Foreground skewness (third standardized moment):
+\[
+\text{SKW} = \frac{\frac{1}{N_F}\sum_i (F_i - \mu_F)^3}{\sigma_F^3}
+\]
+
+\subsection{Excess Kurtosis (KURT)}
+Foreground excess kurtosis (fourth standardized moment minus 3):
+\[
+\text{KURT} = \frac{\frac{1}{N_F}\sum_i (F_i - \mu_F)^4}{\sigma_F^4} - 3
+\]
+
+\section{Participant-Level QC}
+\subsection{Failure Count (FAIL\_FRAC)}
+Counts total non-finite IQM evaluations (NaN/Inf) across all slices/metrics for a participant. Higher counts flag poor FG/BG segmentation or corrupted slices:
+\[
+\text{FAIL\_FRAC} = \sum_{s \in \text{slices}} \sum_{m \in \text{IQMs}} \mathbf{1}\{\text{IQM}_{m,s} \text{ is non-finite}\}
 \]
 
 

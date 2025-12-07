@@ -24,7 +24,7 @@ import yaml
 from PIL import Image as PILImage
 from pydicom.multival import MultiValue
 from pydicom.errors import InvalidDicomError
-from backend.iqm.mri import get_iqm_registry, compute_fail_fraction
+from backend.iqm.mri import get_iqm_registry
 warnings.filterwarnings("ignore", message=".*maximum length of 16 allowed for VR SH.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -473,9 +473,11 @@ def main():
         saved_fg = 0
         saved_bg = 0
 
-        # running accumulators for IQMs: name -> (sum, count)
+        # running accumulators for IQMs: sum/count plus invalid/attempt tracking
         iqm_sum = defaultdict(float)
         iqm_n = defaultdict(int)
+        iqm_invalid = defaultdict(int)
+        iqm_attempts = defaultdict(int)
 
         # collect tag values once per participant (like build_table would)
         tag_values = {}  # abbr -> value
@@ -516,9 +518,10 @@ def main():
                 bg_vals = sl[bg.astype(bool)]
 
                 # IQMs
-                # Online update of IQMs (sum & count), no per-slice list kept
+                # Online update of IQMs with invalid/attempt tracking
                 for fn in iqm_funcs:
                     name, measure = fn(fg_vals, bg_vals)
+                    iqm_attempts[name] += 1
                     try:
                         m = float(measure)
                     except Exception:
@@ -526,6 +529,8 @@ def main():
                     if np.isfinite(m):
                         iqm_sum[name] += m
                         iqm_n[name]   += 1
+                    else:
+                        iqm_invalid[name] += 1
 
 
 
@@ -590,11 +595,11 @@ def main():
         for name in iqm_names:
             n = iqm_n.get(name, 0)
             row[name] = (iqm_sum[name] / n) if n > 0 else float("nan")
-        # Participant-level FAIL_FRAC across IQMs
-        fail_name, fail_val = compute_fail_fraction(row, iqm_names)
-        fail_display = int(fail_val) if np.isfinite(fail_val) else fail_val
-        status_print(f"{tag_idx:>{len(str(total_metrics_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {fail_name}= {fail_display}")
-        row[fail_name] = fail_display
+        # Participant-level FAIL_FRAC: total non-finite IQM evaluations across slices/metrics
+        fail_name = "FAIL_FRAC"
+        fail_total = sum(iqm_invalid.values())
+        status_print(f"{tag_idx:>{len(str(total_metrics_per_participant))}}/{total_metrics_per_participant} IQM {iq_idx:<2} for participant {pid}: {fail_name}= {fail_total}")
+        row[fail_name] = int(fail_total)
         table_rows.append(row)
         total_participants_processed += 1
         total_thumbs_saved += saved_thumbs

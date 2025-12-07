@@ -16,6 +16,8 @@ from .cvp import DESCRIPTION as CVP_DESCRIPTION, cvp
 from .cjv import DESCRIPTION as CJV_DESCRIPTION, cjv
 from .efc import DESCRIPTION as EFC_DESCRIPTION, efc
 from .fber import DESCRIPTION as FBER_DESCRIPTION, fber
+from .skw import DESCRIPTION as SKW_DESCRIPTION, skw
+from .kurt import DESCRIPTION as KURT_DESCRIPTION, kurt
 from .fail_fraction import DESCRIPTION as FAIL_DESCRIPTION, fail_fraction_from_metrics
 
 
@@ -36,6 +38,8 @@ IQM_REGISTRY: List[Dict[str, object]] = [
     {"name": "CJV", "func": cjv, "description": CJV_DESCRIPTION},
     {"name": "EFC", "func": efc, "description": EFC_DESCRIPTION},
     {"name": "FBER", "func": fber, "description": FBER_DESCRIPTION},
+    {"name": "SKW", "func": skw, "description": SKW_DESCRIPTION},
+    {"name": "KURT", "func": kurt, "description": KURT_DESCRIPTION},
 ]
 
 

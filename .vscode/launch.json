@@ -21,7 +21,7 @@
             },
             "args": [
                 "--inputdir",
-                "/Users/amirsadri/Library/CloudStorage/GoogleDrive-ars329@case.edu/My Drive/RadQy/input/V10",
+                "/Users/amirsadri/Library/CloudStorage/GoogleDrive-ars329@case.edu/My Drive/RadQy/input/X1",
                 "--scantype",
                 "mri",
                 "--save-fgbg",
