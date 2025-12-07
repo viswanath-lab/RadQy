@@ -1,0 +1,9 @@
+[0] Config.pm:308> INFO - This is Biber 2.20
+[0] Config.pm:311> INFO - Logfile is 'MRI_IQM_formulas.blg'
+[35] biber-darwin:340> INFO - === Sun Dec  7, 2025, 07:25:57
+[43] Biber.pm:420> INFO - Reading 'MRI_IQM_formulas.bcf'
+[79] Biber.pm:994> INFO - Found 0 citekeys in bib section 0
+[87] bbl.pm:676> INFO - Writing 'MRI_IQM_formulas.bbl' with encoding 'UTF-8'
+[87] bbl.pm:779> INFO - Output to MRI_IQM_formulas.bbl
+[87] Biber.pm:131> WARN - The file 'MRI_IQM_formulas.bcf' does not contain any citations!
+[87] Biber.pm:133> INFO - WARNINGS: 1

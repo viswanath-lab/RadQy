@@ -40,15 +40,107 @@ This document summarizes commonly used MRI image quality metrics (IQMs) and thei
 \addcontentsline{toc}{section}{Introduction}
 This document summarizes commonly used MRI image quality metrics (IQMs) and their mathematical definitions for reproducibility and reporting.
 
-\section{Signal-to-Noise Ratio (SNR)}
-\begin{equation}
-\text{SNR} = \frac{\mu_{\text{signal}}}{\sigma_{\text{noise}}}
-\end{equation}
+\section{Per-Slice IQMs (Foreground / Background pixels)}
+All metrics below accept foreground pixels $\mathbf{F}$ (from segmentation) and background pixels $\mathbf{B}$; NaN/Inf inputs yield NaN. When a denominator is zero or data are missing, the metric is NaN by construction.
 
+\subsection{Mean (MEAN)}
+Foreground mean intensity:
+\[
+\text{MEAN} = \mu_F = \frac{1}{N_F} \sum_{i} F_i
+\]
 
-where $\mu_{\text{signal}}$ is the mean intensity in the signal region and $\sigma_{\text{noise}}$ is the standard deviation in a background noise region.
+\subsection{Range (RNG)}
+Foreground intensity range:
+\[
+\text{RNG} = \max(F) - \min(F)
+\]
 
-\cite{elad2010sparse}
+\subsection{Variance (VAR)}
+Foreground variance:
+\[
+\text{VAR} = \sigma_F^2 = \frac{1}{N_F}\sum_i (F_i - \mu_F)^2
+\]
+
+\subsection{Coefficient of Variation (CV)}
+Foreground coefficient of variation (percent):
+\[
+\text{CV} = \frac{\sigma_F}{\mu_F} \times 100
+\]
+
+\subsection{Contrast per Pixel (CPP)}
+Laplacian-filtered contrast, mean response of a $3\times3$ Laplacian:
+\[
+f_1 = \frac{1}{8}
+\begin{bmatrix}
+-1 & -1 & -1\\
+-1 & 8  & -1\\
+-1 & -1 & -1
+\end{bmatrix}, \quad
+\text{CPP} = \text{mean}\left(f_1 * F\right)
+\]
+where $*$ is 2D convolution (foreground is median-filtered only when used for PSNR below).
+
+\subsection{Peak Signal-to-Noise Ratio (PSNR)}
+\[
+\text{PSNR} = 10 \log_{10} \left( \frac{\max(F)^2}{\text{MSE}(F,\hat{F})} \right)
+\]
+where $\hat{F}$ is either the background $\mathbf{B}$ (if provided) or a median-filtered version of $\mathbf{F}$.
+
+\subsection{SNR1}
+Ratio of foreground to background standard deviation:
+\[
+\text{SNR1} = \frac{\sigma_F}{\sigma_B}
+\]
+
+\subsection{SNR2}
+Foreground mean over background standard deviation:
+\[
+\text{SNR2} = \frac{\mu_F}{\sigma_B}
+\]
+
+\subsection{SNR3}
+Foreground standard deviation divided by centered-foreground standard deviation (stability check):
+\[
+\text{SNR3} = \frac{\sigma_F}{\sigma_{F - \mu_F}}
+\]
+
+\subsection{SNR4}
+Foreground mean over background mean:
+\[
+\text{SNR4} = \frac{\mu_F}{\mu_B}
+\]
+
+\subsection{Contrast-to-Noise Ratio (CNR)}
+Foreground/background mean difference over background standard deviation:
+\[
+\text{CNR} = \frac{\mu_F - \mu_B}{\sigma_B}
+\]
+
+\subsection{Patch Coefficient of Variation (CVP)}
+Foreground patch coefficient of variation:
+\[
+\text{CVP} = \frac{\sigma_F}{\mu_F}
+\]
+
+\subsection{Coefficient of Joint Variation (CJV)}
+Joint variation between foreground and background:
+\[
+\text{CJV} = \frac{\sigma_F + \sigma_B}{|\mu_F - \mu_B|}
+\]
+
+\subsection{Entropy Focus Criterion (EFC)}
+Normalized Shannon entropy of foreground:
+\[
+p_i = \frac{F_i}{\sqrt{\sum_j F_j^2}}, \quad
+\text{EFC} = -\frac{1}{\log N_F} \sum_i p_i \log p_i
+\]
+higher values suggest more ghosting/noise.
+
+\subsection{Foreground-Background Energy Ratio (FBER)}
+Median energy ratio:
+\[
+\text{FBER} = \frac{\text{median}(F^2)}{\text{median}(B^2)}
+\]
 
 
 % \section*{Meta Note}

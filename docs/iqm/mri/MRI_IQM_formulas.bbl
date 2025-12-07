@@ -16,45 +16,5 @@
   {}
 \endgroup
 
-
-\refsection{0}
-  \datalist[entry]{none/global//global/global/global}
-    \entry{elad2010sparse}{book}{}{}
-      \name{author}{1}{}{%
-        {{hash=20b8206f111f40a7edb0499bc22b9375}{%
-           family={Elad},
-           familyi={E\bibinitperiod},
-           given={Michael},
-           giveni={M\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Springer}%
-      }
-      \strng{namehash}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{fullhash}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{fullhashraw}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{bibnamehash}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{authorbibnamehash}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{authornamehash}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{authorfullhash}{20b8206f111f40a7edb0499bc22b9375}
-      \strng{authorfullhashraw}{20b8206f111f40a7edb0499bc22b9375}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{title}{Sparse and Redundant Representations: From Theory to Applications in Signal and Image Processing}
-      \field{year}{2010}
-      \verb{doi}
-      \verb 10.1007/978-1-4419-7011-3
-      \endverb
-      \verb{urlraw}
-      \verb https://doi.org/10.1007/978-1-4419-7011-3
-      \endverb
-      \verb{url}
-      \verb https://doi.org/10.1007/978-1-4419-7011-3
-      \endverb
-    \endentry
-  \enddatalist
-\endrefsection
 \endinput
 

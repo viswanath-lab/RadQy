@@ -6,6 +6,16 @@ from .rng import DESCRIPTION as RNG_DESCRIPTION, rng
 from .var import DESCRIPTION as VAR_DESCRIPTION, var
 from .cv import DESCRIPTION as CV_DESCRIPTION, cv
 from .cpp import DESCRIPTION as CPP_DESCRIPTION, cpp
+from .psnr import DESCRIPTION as PSNR_DESCRIPTION, psnr
+from .snr1 import DESCRIPTION as SNR1_DESCRIPTION, snr1
+from .snr2 import DESCRIPTION as SNR2_DESCRIPTION, snr2
+from .snr3 import DESCRIPTION as SNR3_DESCRIPTION, snr3
+from .snr4 import DESCRIPTION as SNR4_DESCRIPTION, snr4
+from .cnr import DESCRIPTION as CNR_DESCRIPTION, cnr
+from .cvp import DESCRIPTION as CVP_DESCRIPTION, cvp
+from .cjv import DESCRIPTION as CJV_DESCRIPTION, cjv
+from .efc import DESCRIPTION as EFC_DESCRIPTION, efc
+from .fber import DESCRIPTION as FBER_DESCRIPTION, fber
 from .fail_fraction import DESCRIPTION as FAIL_DESCRIPTION, fail_fraction_from_metrics
 
 
@@ -16,6 +26,16 @@ IQM_REGISTRY: List[Dict[str, object]] = [
     {"name": "VAR", "func": var, "description": VAR_DESCRIPTION},
     {"name": "CV",  "func": cv,  "description": CV_DESCRIPTION},
     {"name": "CPP", "func": cpp, "description": CPP_DESCRIPTION},
+    {"name": "PSNR", "func": psnr, "description": PSNR_DESCRIPTION},
+    {"name": "SNR1", "func": snr1, "description": SNR1_DESCRIPTION},
+    {"name": "SNR2", "func": snr2, "description": SNR2_DESCRIPTION},
+    {"name": "SNR3", "func": snr3, "description": SNR3_DESCRIPTION},
+    {"name": "SNR4", "func": snr4, "description": SNR4_DESCRIPTION},
+    {"name": "CNR", "func": cnr, "description": CNR_DESCRIPTION},
+    {"name": "CVP", "func": cvp, "description": CVP_DESCRIPTION},
+    {"name": "CJV", "func": cjv, "description": CJV_DESCRIPTION},
+    {"name": "EFC", "func": efc, "description": EFC_DESCRIPTION},
+    {"name": "FBER", "func": fber, "description": FBER_DESCRIPTION},
 ]
 
 
