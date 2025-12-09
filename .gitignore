@@ -1,2 +1,30 @@
+# Ignore Frontend Data folder (containing img/fg/bg thumbnails)
 frontend/Data/
+
+# macOS junk files
 .DS_Store
+
+# ======================
+# Ignore ALL LaTeX sources anywhere
+# ======================
+*.tex
+*.bib
+
+# ======================
+# Ignore LaTeX build artifacts
+# ======================
+*.aux
+*.log
+*.toc
+*.out
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+
+# Ignore LaTeX build output folder if used
+build/

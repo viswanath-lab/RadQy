@@ -44,10 +44,10 @@
   <internal package="biblatex" priority="9" active="0">
     <generic>latex</generic>
     <provides type="dynamic">
-      <file>MRI_IQM_formulas.bcf</file>
+      <file>MRI_IQM_Formulas.bcf</file>
     </provides>
     <requires type="dynamic">
-      <file>MRI_IQM_formulas.bbl</file>
+      <file>MRI_IQM_Formulas.bbl</file>
     </requires>
     <requires type="static">
       <file>blx-dm.def</file>
@@ -55,7 +55,10 @@
       <file>biblatex.def</file>
       <file>standard.bbx</file>
       <file>numeric.bbx</file>
-      <file>numeric.cbx</file>
+      <file>numeric-comp.bbx</file>
+      <file>ieee.bbx</file>
+      <file>numeric-comp.cbx</file>
+      <file>ieee.cbx</file>
       <file>biblatex.cfg</file>
       <file>english.lbx</file>
     </requires>
@@ -64,22 +67,22 @@
     <generic>biber</generic>
     <cmdline>
       <binary>biber</binary>
-      <infile>MRI_IQM_formulas</infile>
+      <infile>MRI_IQM_Formulas</infile>
     </cmdline>
     <input>
-      <file>MRI_IQM_formulas.bcf</file>
+      <file>MRI_IQM_Formulas.bcf</file>
     </input>
     <output>
-      <file>MRI_IQM_formulas.bbl</file>
+      <file>MRI_IQM_Formulas.bbl</file>
     </output>
     <provides type="dynamic">
-      <file>MRI_IQM_formulas.bbl</file>
+      <file>MRI_IQM_Formulas.bbl</file>
     </provides>
     <requires type="dynamic">
-      <file>MRI_IQM_formulas.bcf</file>
+      <file>MRI_IQM_Formulas.bcf</file>
     </requires>
     <requires type="editable">
-      <file>references.bib</file>
+      <file>../../references.bib</file>
     </requires>
   </external>
 </requests>

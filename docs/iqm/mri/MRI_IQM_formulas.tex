@@ -4,8 +4,8 @@
 \geometry{margin=1in}
 \usepackage{xcolor}
 \usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=red]{hyperref}
-\usepackage[backend=biber,style=numeric,sorting=none,doi=false,url=false]{biblatex}
-\addbibresource{references.bib}
+\usepackage[backend=biber,style=ieee,sorting=none,doi=false,url=false]{biblatex}
+\addbibresource{../../references.bib}
 \newcommand{\biblinklabel}[1]{%
   \iffieldundef{url}
     {\iffieldundef{doi}{#1}{\href{https://doi.org/\thefield{doi}}{#1}}}
