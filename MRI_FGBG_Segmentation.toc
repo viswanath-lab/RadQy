@@ -1,0 +1,7 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
+\contentsline {section}{\numberline {2}Image Processing Segmenters}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}OtsuHull (\texttt {OtsuHull.py})}{2}{subsection.2.1}%
+\contentsline {section}{\numberline {3}Deep Learning Segmenters}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}U-Net (placeholder)}{2}{subsection.3.1}%
+\contentsline {section}{\numberline {4}Notes for Integration}{2}{section.4}%
+\contentsline {section}{References}{2}{section.4}%
