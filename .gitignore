@@ -4,27 +4,8 @@ frontend/Data/
 # macOS junk files
 .DS_Store
 
-# ======================
-# Ignore ALL LaTeX sources anywhere
-# ======================
-*.tex
-*.bib
+# Ignore everything in docs/
+docs/**
 
-# ======================
-# Ignore LaTeX build artifacts
-# ======================
-*.aux
-*.log
-*.toc
-*.out
-*.fdb_latexmk
-*.fls
-*.synctex.gz
-*.bbl
-*.blg
-*.nav
-*.snm
-*.vrb
-
-# Ignore LaTeX build output folder if used
-build/
+# BUT track PDF files
+!docs/**/*.pdf
