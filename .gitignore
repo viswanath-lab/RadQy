@@ -9,3 +9,7 @@ docs/**
 
 # BUT track PDF files
 !docs/**/*.pdf
+
+
+# Private TeX stored in Google Drive
+docs/tex/

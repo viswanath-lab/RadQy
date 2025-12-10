@@ -3,6 +3,8 @@ Legacy hybrid Otsu + convex hull foreground extractor, mirroring the
 original snippet but returning masks only.
 
 API (matches other segmenters in this folder):
+    - normalize_uint16(img)     -> uint16 normalized image in [0, 65535]
+    - run_otsuhull(img)         -> (fg, bg) masks in {0,1} with internal normalization
     - segment(img)              -> fg mask in {0,1}
     - make_masks(img)           -> (fg, bg) masks in {0,1}
     - hybrid_otsu_hull_foreground(img) -> (fg, bg) masks in {0,1}
@@ -94,6 +96,24 @@ def hybrid_otsu_hull_foreground(img: np.ndarray):
     return fg, bg
 
 
+def normalize_uint16(img: np.ndarray) -> np.ndarray:
+    """Normalize any numeric array to uint16 on [0, 65535]."""
+    x = np.asarray(img, dtype=np.float32)
+    x = x - x.min()
+    maxv = x.max()
+    if maxv > 0:
+        x = x / maxv
+    return (x * 65535.0).astype(np.uint16)
+
+
+def run_otsuhull(img: np.ndarray):
+    """
+    Convenience wrapper: normalize input to uint16 then return (fg, bg) masks.
+    """
+    img_u16 = normalize_uint16(img)
+    return make_masks(img_u16)
+
+
 def segment(img: np.ndarray) -> np.ndarray:
     """Return binary foreground mask (convex hull) in {0,1} for a single 2D image."""
     fg, _ = hybrid_otsu_hull_foreground(img)
@@ -110,4 +130,10 @@ def make_masks(img: np.ndarray):
     return fg, bg
 
 
-__all__ = ["hybrid_otsu_hull_foreground", "segment", "make_masks"]
+__all__ = [
+    "normalize_uint16",
+    "run_otsuhull",
+    "hybrid_otsu_hull_foreground",
+    "segment",
+    "make_masks",
+]
