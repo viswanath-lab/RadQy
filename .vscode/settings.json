@@ -1,42 +1,47 @@
 {
-    "latex-workshop.latex.rootFile.useSubFile": false,
-    "latex-workshop.latex.outDir": "D:/radqy/docs",
-    "latex-workshop.latex.autoBuild.run": "onSave",
-    "latex-workshop.view.pdf.viewer": "external",
+  "latex-workshop.latex.rootFile.useSubFile": false,
+  "latex-workshop.latex.outDir": "%DIR%", // keep outputs next to the root .tex file (works on Win/mac)
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.view.pdf.viewer": "external",
 
-    "latex-workshop.latex.recipe.default": "build",
+  "latex-workshop.latex.recipe.default": "build",
 
-    "latex-workshop.latex.tools": [
-        {
-            "name": "pdflatex",
-            "command": "pdflatex",
-            "args": [
-                "-synctex=1",
-                "-interaction=nonstopmode",
-                "-output-directory=D:/radqy/docs",
-                "%DOC%"
-            ]
-        },
-        {
-            "name": "biber",
-            "command": "biber",
-            "args": [
-                "--input-directory=D:/radqy/docs",
-                "--output-directory=D:/radqy/docs",
-                "%DOCFILE%"
-            ]
-        }
-    ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "pdflatex",
+      "command": "pdflatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-output-directory=%OUTDIR%",
+        "%DOC%"
+      ]
+    },
+    {
+      "name": "biber",
+      "command": "biber",
+      "args": [
+        "--input-directory=%OUTDIR%",
+        "--output-directory=%OUTDIR%",
+        "%DOCFILE%"
+      ]
+    },
+    {
+      "name": "copy-pdf-to-repo-docs",
+      "command": "node",
+      "args": [
+        "%WORKSPACE_FOLDER%/tools/copy-pdf.js",
+        "%OUTDIR%",
+        "%DOCFILE%",
+        "%WORKSPACE_FOLDER%/docs"
+      ]
+    }
+  ],
 
-    "latex-workshop.latex.recipes": [
-        {
-            "name": "build",
-            "tools": [
-                "pdflatex",
-                "biber",
-                "pdflatex",
-                "pdflatex"
-            ]
-        }
-    ]
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "build",
+      "tools": ["pdflatex", "biber", "pdflatex", "pdflatex", "copy-pdf-to-repo-docs"]
+    }
+  ]
 }
