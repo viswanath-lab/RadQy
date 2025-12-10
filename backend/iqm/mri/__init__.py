@@ -19,6 +19,18 @@ from .fber import DESCRIPTION as FBER_DESCRIPTION, fber
 from .skw import DESCRIPTION as SKW_DESCRIPTION, skw
 from .kurt import DESCRIPTION as KURT_DESCRIPTION, kurt
 from .fail_fraction import DESCRIPTION as FAIL_DESCRIPTION, fail_fraction_from_metrics
+from .freq_lfr import DESCRIPTION as LFR_DESCRIPTION, freq_lfr
+from .freq_hfr import DESCRIPTION as HFR_DESCRIPTION, freq_hfr
+from .freq_snrf import DESCRIPTION as SNRF_DESCRIPTION, freq_snrf
+from .wavelet_wcs import DESCRIPTION as WCS_DESCRIPTION, wavelet_wcs
+from .wavelet_wce import DESCRIPTION as WCE_DESCRIPTION, wavelet_wce
+from .wavelet_wqs import DESCRIPTION as WQS_DESCRIPTION, wavelet_wqs
+from .glcm_contrast import DESCRIPTION as GLCM_CONTRAST_DESCRIPTION, glcm_contrast
+from .glcm_dissimilarity import DESCRIPTION as GLCM_DISS_DESCRIPTION, glcm_dissimilarity
+from .glcm_asm import DESCRIPTION as GLCM_ASM_DESCRIPTION, glcm_asm
+from .glcm_energy import DESCRIPTION as GLCM_ENERGY_DESCRIPTION, glcm_energy
+from .glcm_homogeneity import DESCRIPTION as GLCM_HOMO_DESCRIPTION, glcm_homogeneity
+from .glcm_correlation import DESCRIPTION as GLCM_CORR_DESCRIPTION, glcm_correlation
 
 
 # Base per-slice IQMs
@@ -40,6 +52,18 @@ IQM_REGISTRY: List[Dict[str, object]] = [
     {"name": "FBER", "func": fber, "description": FBER_DESCRIPTION},
     {"name": "SKW", "func": skw, "description": SKW_DESCRIPTION},
     {"name": "KURT", "func": kurt, "description": KURT_DESCRIPTION},
+    {"name": "LFR", "func": freq_lfr, "description": LFR_DESCRIPTION},
+    {"name": "HFR", "func": freq_hfr, "description": HFR_DESCRIPTION},
+    {"name": "SNRF", "func": freq_snrf, "description": SNRF_DESCRIPTION},
+    {"name": "WCS", "func": wavelet_wcs, "description": WCS_DESCRIPTION},
+    {"name": "WCE", "func": wavelet_wce, "description": WCE_DESCRIPTION},
+    {"name": "WQS", "func": wavelet_wqs, "description": WQS_DESCRIPTION},
+    {"name": "GLCM_CONTRAST", "func": glcm_contrast, "description": GLCM_CONTRAST_DESCRIPTION},
+    {"name": "GLCM_DISS", "func": glcm_dissimilarity, "description": GLCM_DISS_DESCRIPTION},
+    {"name": "GLCM_ASM", "func": glcm_asm, "description": GLCM_ASM_DESCRIPTION},
+    {"name": "GLCM_ENERGY", "func": glcm_energy, "description": GLCM_ENERGY_DESCRIPTION},
+    {"name": "GLCM_HOMOGENEITY", "func": glcm_homogeneity, "description": GLCM_HOMO_DESCRIPTION},
+    {"name": "GLCM_CORR", "func": glcm_correlation, "description": GLCM_CORR_DESCRIPTION},
 ]
 
 

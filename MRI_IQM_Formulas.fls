@@ -1,0 +1,6 @@
+PWD /Users/amirsadri/Projects/RadQy
+INPUT /usr/local/texlive/2025/texmf.cnf
+INPUT /usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf
+INPUT /usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt
+INPUT docs/tex/MRI_IQM_Formulas.tex
+OUTPUT MRI_IQM_Formulas.log

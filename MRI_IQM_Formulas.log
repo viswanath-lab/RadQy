@@ -1,0 +1,32 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  10 DEC 2025 13:32
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**docs/tex/MRI_IQM_Formulas.tex
+(./docs/tex/MRI_IQM_Formulas.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+
+! LaTeX Error: File `AmirGitDoc.cls' not found.
+
+Type X to quit or <RETURN> to proceed,
+or enter new name. (Default extension: cls)
+
+Enter file name: 
+! Emergency stop.
+<read *> 
+         
+l.2 \usepackage
+               {lipsum}^^M
+End of file on the terminal!
+
+ 
+Here is how much of TeX's memory you used:
+ 20 strings out of 473190
+ 495 string characters out of 5715801
+ 391984 words of memory out of 5000000
+ 23372 multiletter control sequences out of 15000+600000
+ 558837 words of font info for 36 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 19i,0n,29p,93b,17s stack positions out of 10000i,1000n,20000p,200000b,200000s
+!  ==> Fatal error occurred, no output PDF file produced!

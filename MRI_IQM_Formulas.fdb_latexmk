@@ -1,0 +1,13 @@
+# Fdb version 4
+["pdflatex"] 1765391523.99172 "docs/tex/MRI_IQM_Formulas.tex" "MRI_IQM_Formulas.pdf" "MRI_IQM_Formulas" 1765391524.15833 2
+  "/usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf" 1739380943 42148 61becc7c670cd061bb319c643c27fdd4 ""
+  "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1741450574 3345740 46b66fdb0378f7bf5921b5eabf1762b8 ""
+  "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
+  "AmirGitDoc.cls" 0 -1 0 ""
+  "MRI_IQM_Formulas.aux" 1765391523.991 32 3985256e7290058c681f74d7a3565a19 "pdflatex"
+  "docs/tex/MRI_IQM_Formulas.tex" 1765391451.38039 20258 84c6ad4168d6a0edb1267700193b9e09 ""
+  (generated)
+  "MRI_IQM_Formulas.aux"
+  "MRI_IQM_Formulas.log"
+  "MRI_IQM_Formulas.pdf"
+  (rewritten before read)
