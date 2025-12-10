@@ -1,0 +1,3 @@
+git subtree push --prefix=. https://github.com/YOU/radqy_private_vault main
+
+git subtree pull --prefix=. https://github.com/YOU/radqy_private_vault main --squash
