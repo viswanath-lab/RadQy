@@ -1,6 +1,6 @@
-git subtree push --prefix=. https://github.com/YOU/radqy_private_vault main
+git subtree push --prefix=. https://github.com/Amir-Reza-Sadri/radqy_private_vault main
 
-git subtree pull --prefix=. https://github.com/YOU/radqy_private_vault main --squash
+git subtree pull --prefix=. https://github.com/Amir-Reza-Sadri/radqy_private_vault main --squash
 
 
 pip install -r requirements.txt
