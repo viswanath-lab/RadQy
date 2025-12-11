@@ -11,3 +11,5 @@ mklink /D tex "G:\My Drive\radqy_private_vault\docs"
 
 cd /Users/amirsadri/Projects/RadQy/docs
 ln -s "/Users/amirsadri/Library/CloudStorage/GoogleDrive-ars329@case.edu/My Drive/radqy_private_vault/docs" tex
+
+git reset --hard HEAD

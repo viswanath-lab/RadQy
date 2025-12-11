@@ -28,9 +28,9 @@
     },
     {
       "name": "copy-pdf-to-repo-docs",
-      "command": "node",
+      "command": "python",
       "args": [
-        "%WORKSPACE_FOLDER%/tools/copy-pdf.js",
+        "%WORKSPACE_FOLDER%/tools/copy-pdf.py",
         "%OUTDIR%",
         "%DOCFILE%",
         "%WORKSPACE_FOLDER%/docs"
