@@ -1,3 +1,21 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Packaging/metadata
+*.egg-info/
+
 # Ignore Frontend Data folder (containing img/fg/bg thumbnails)
 frontend/Data/
 
@@ -10,14 +28,8 @@ docs/**
 # BUT track PDF files
 !docs/**/*.pdf
 
-
 # Private TeX stored in Google Drive
 docs/tex/
 
-.venv/
 .github/
-
 syntaxes.txt
-
-.gitignore
-
