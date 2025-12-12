@@ -3,6 +3,9 @@
 venv/
 env/
 
+# Editor settings
+.vscode/
+
 # Python artifacts
 __pycache__/
 *.py[cod]
