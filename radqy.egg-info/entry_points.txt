@@ -1,2 +1,0 @@
-[console_scripts]
-radqy = backend.cli:main
