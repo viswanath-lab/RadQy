@@ -36,3 +36,5 @@ docs/tex/
 
 .github/
 syntaxes.txt
+.vscode/
+desktop.ini
