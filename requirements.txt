@@ -5,3 +5,4 @@ PyYAML
 Pillow
 numpy
 scipy
+scikit-image

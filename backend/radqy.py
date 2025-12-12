@@ -83,6 +83,64 @@ def load_default_segmenter():
         from seg.mri.AdaptiveBorderSeg import make_masks as default_masks  # type: ignore
     return default_masks, "Default: AdaptiveBorderSeg"
 
+def resolve_segmenter(segmenter_arg: str):
+    """
+    Resolve a segmenter based on CLI arg. Supports:
+    - blank -> default AdaptiveBorderSeg
+    - name 'otsuhull' -> backend.seg.mri.OtsuHull.make_masks
+    - path to a .py file exporting make_masks or segment
+    - dotted module path exporting make_masks or segment
+    Returns (callable, name_str).
+    """
+    if not segmenter_arg:
+        return load_default_segmenter()
+
+    arg = segmenter_arg.strip()
+    lowered = arg.lower()
+    builtin_map = {
+        "otsuhull": "backend.seg.mri.OtsuHull",
+        "otsu-hull": "backend.seg.mri.OtsuHull",
+        "otsu_hull": "backend.seg.mri.OtsuHull",
+    }
+
+    # Built-in: OtsuHull by name
+    if lowered in builtin_map:
+        mod_name = builtin_map[lowered]
+        mod = importlib.import_module(mod_name)
+        if hasattr(mod, "make_masks"):
+            return mod.make_masks, "OtsuHull"
+        if hasattr(mod, "segment"):
+            def wrapper(img):
+                fg = mod.segment(img)
+                bg = (1 - fg).astype(np.uint8)
+                return fg, bg
+            return wrapper, "OtsuHull"
+        raise AttributeError(f"{mod_name} does not expose make_masks() or segment()")
+
+    # Path to a custom file
+    p = Path(arg)
+    if p.exists():
+        return load_segmenter_from_file(arg), p.stem
+
+    # Dotted module path
+    try:
+        mod = importlib.import_module(arg)
+        if hasattr(mod, "make_masks"):
+            return mod.make_masks, arg
+        if hasattr(mod, "segment"):
+            def wrapper(img):
+                fg = mod.segment(img)
+                bg = (1 - fg).astype(np.uint8)
+                return fg, bg
+            return wrapper, arg
+    except ImportError:
+        pass
+
+    raise FileNotFoundError(
+        f"Segmenter '{segmenter_arg}' not found. "
+        "Use a known name (e.g., 'otsuhull'), a .py path, or a module path."
+    )
+
 def _read_float32_slice(ds):
     """Convert DICOM pixel data to float32 array with RescaleSlope/Intercept applied."""
     arr = ds.pixel_array.astype(np.float32)
@@ -355,11 +413,7 @@ def main():
     args = ap.parse_args()
 
     # Determine which segmentation method to use
-    if args.segmenter:
-        segmenter_fn = load_segmenter_from_file(args.segmenter)
-        segmenter_name = Path(args.segmenter).stem
-    else:
-        segmenter_fn, segmenter_name = load_default_segmenter()
+    segmenter_fn, segmenter_name = resolve_segmenter(args.segmenter)
 
     # Start print
     starting_banner(args.scantype)
@@ -514,26 +568,6 @@ def main():
                 sl = _read_float32_slice(ds)   # float32 HxW
                 fg, bg = segmenter_fn(sl)      # returns HxW binary masks
 
-                fg_vals = sl[fg.astype(bool)]
-                bg_vals = sl[bg.astype(bool)]
-
-                # IQMs
-                # Online update of IQMs with invalid/attempt tracking
-                for fn in iqm_funcs:
-                    name, measure = fn(fg_vals, bg_vals)
-                    iqm_attempts[name] += 1
-                    try:
-                        m = float(measure)
-                    except Exception:
-                        m = float("nan")
-                    if np.isfinite(m):
-                        iqm_sum[name] += m
-                        iqm_n[name]   += 1
-                    else:
-                        iqm_invalid[name] += 1
-
-
-
                 if args.save_fgbg:
                     try:
                         PILImage.fromarray((fg.astype(np.uint8) * 255)).save(fg_dir / fname)
@@ -545,6 +579,27 @@ def main():
                         saved_bg += 1
                     except Exception:
                         pass
+
+                fg_vals = sl[fg.astype(bool)]
+                bg_vals = sl[bg.astype(bool)]
+
+                # IQMs (protected so mask saving still happens even if a metric fails)
+                for fn in iqm_funcs:
+                    try:
+                        name, measure = fn(fg_vals, bg_vals)
+                    except Exception:
+                        # skip this metric for this slice
+                        continue
+                    iqm_attempts[name] += 1
+                    try:
+                        m = float(measure)
+                    except Exception:
+                        m = float("nan")
+                    if np.isfinite(m):
+                        iqm_sum[name] += m
+                        iqm_n[name]   += 1
+                    else:
+                        iqm_invalid[name] += 1
             except Exception:
                 # Skip FG/BG if segmentation failed for this slice
                 continue

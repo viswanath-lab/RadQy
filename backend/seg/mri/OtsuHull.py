@@ -10,6 +10,10 @@ API (matches other segmenters in this folder):
     - hybrid_otsu_hull_foreground(img) -> (fg, bg) masks in {0,1}
 """
 
+import argparse
+from pathlib import Path
+
+import imageio.v2 as iio
 import numpy as np
 from scipy.ndimage import binary_fill_holes
 
@@ -130,6 +134,48 @@ def make_masks(img: np.ndarray):
     return fg, bg
 
 
+# -------- CLI helpers --------
+def _load_image(path: Path) -> np.ndarray:
+    """Load image (PNG/JPG/TIF) or .npy array and return as ndarray."""
+    if path.suffix.lower() == ".npy":
+        arr = np.load(path)
+    else:
+        arr = iio.imread(path)
+    if arr.ndim == 3:
+        arr = np.mean(arr[..., :3], axis=2)  # grayscale for RGB/RGBA
+    return np.asarray(arr)
+
+
+def _save_mask(mask: np.ndarray, out_path: Path) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    iio.imwrite(out_path, (mask.astype(np.uint8) * 255))
+
+
+def _cli():
+    parser = argparse.ArgumentParser(
+        description="Run Otsu+convex hull segmentation and save fg/bg masks."
+    )
+    parser.add_argument("input", help="Path to input image (.png/.jpg/.tif) or .npy array.")
+    parser.add_argument("--fg-out", help="Output path for foreground mask PNG.")
+    parser.add_argument("--bg-out", help="Output path for background mask PNG.")
+    args = parser.parse_args()
+
+    in_path = Path(args.input)
+    if not in_path.exists():
+        raise FileNotFoundError(f"Input image not found: {in_path}")
+
+    img = _load_image(in_path)
+    fg, bg = make_masks(img)
+
+    fg_out = Path(args.fg_out) if args.fg_out else in_path.with_name(in_path.stem + "_fg.png")
+    bg_out = Path(args.bg_out) if args.bg_out else in_path.with_name(in_path.stem + "_bg.png")
+
+    _save_mask(fg, fg_out)
+    _save_mask(bg, bg_out)
+
+    print(f"Saved masks: fg -> {fg_out}, bg -> {bg_out}; shape={fg.shape}")
+
+
 __all__ = [
     "normalize_uint16",
     "run_otsuhull",
@@ -137,3 +183,7 @@ __all__ = [
     "segment",
     "make_masks",
 ]
+
+
+if __name__ == "__main__":
+    _cli()
