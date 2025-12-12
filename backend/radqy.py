@@ -84,10 +84,10 @@ def load_default_segmenter():
     Returns a callable and a human-readable name.
     """
     try:
-        from backend.seg.mri.AdaptiveBorderSeg import make_masks as default_masks
+        from backend.seg.mri.OtsuHull import make_masks as default_masks
     except ImportError:
-        from seg.mri.AdaptiveBorderSeg import make_masks as default_masks  # type: ignore
-    return default_masks, "Default: AdaptiveBorderSeg"
+        from seg.mri.OtsuHull import make_masks as default_masks  # type: ignore
+    return default_masks, "Default: OtsuHull"
 
 SEGMENTER_CHOICES = ["adaptiveborder", "otsuhull", "regiongrowing", "unet", "fcn", "mobilenet"]
 
@@ -95,14 +95,14 @@ SEGMENTER_CHOICES = ["adaptiveborder", "otsuhull", "regiongrowing", "unet", "fcn
 def resolve_segmenter(segmenter_arg: str):
     """
     Resolve a segmenter based on CLI arg. Supports:
-    - adaptiveborder (default)
+    - otsuhull (default)
     - otsuhull -> backend.seg.mri.OtsuHull.make_masks
     - unet -> backend.seg.mri.UNet.make_masks with backend/seg/mri/models/unet.pt on CPU
     - regiongrowing/fcn/mobilenet -> reserved (not implemented here; raises with guidance)
     Returns (callable, name_str).
     """
     if not segmenter_arg:
-        segmenter_arg = "adaptiveborder"
+        segmenter_arg = "otsuhull"
 
     arg = segmenter_arg.strip()
     lowered = arg.lower()
@@ -442,17 +442,17 @@ def main():
     start_time = time.time()
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ap = argparse.ArgumentParser(description="Generate participant TSV with DICOM metadata and middle-% slice selection.")
-    ap.add_argument("--inputdir", required=True, type=str)
-    ap.add_argument("--scantype", required=True, type=str)
-    ap.add_argument("--middle-percent", type=int, default=100)
-    ap.add_argument("--num-samples", type=int, default=1)
-    ap.add_argument("--save-fgbg", action="store_true",help="If set, save per-participant foreground/background masks.")
+    ap.add_argument("--inputdir", required=True, type=str, help="Root folder containing participant subfolders with DICOM files.")
+    ap.add_argument("--scantype", required=True, type=str, choices=["mri", "ct"], help="Scan type to determine which YAML tag file to load (mri or ct).")
+    ap.add_argument("--middle-percent", type=int, default=100, help="Percent of middle slices to keep per series (1-100).")
+    ap.add_argument("--num-samples", type=int, default=1, help="Stride for sampling slices; 1 keeps every slice, 2 keeps every other slice, etc.")
+    ap.add_argument("--save-fgbg", action="store_true", help="If set, save per-participant foreground/background masks.")
     ap.add_argument(
         "--segmenter",
         type=str,
-        default="adaptiveborder",
+        default="otsuhull",
         choices=SEGMENTER_CHOICES,
-        help="Segmentation method",
+        help="Segmentation method (default: otsuhull).",
     )
     ap.add_argument("--verbose", action="store_true", help="Print per-file processing progress.")
 

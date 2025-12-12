@@ -13,3 +13,5 @@ docs/**
 
 # Private TeX stored in Google Drive
 docs/tex/
+
+.venv/
