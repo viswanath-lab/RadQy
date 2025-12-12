@@ -14,9 +14,9 @@ dependencies = [
     "pydicom",
     "Pillow",
     "PyYAML",
-    "argcomplete",
-    "questionary",
-    "typer",
+    "argcomplete",  # optional: shell autocompletion for argparse CLI
+    "questionary",  # optional: interactive segmenter picker
+    "typer",        # CLI (pulls in click + rich)
     "click",
     "rich"
 ]
@@ -27,3 +27,6 @@ radqy = "backend.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["backend"]
+
+# Optional (install separately if you need them):
+# - torch + monai: enable UNet/FCN segmenters under backend/seg/mri
