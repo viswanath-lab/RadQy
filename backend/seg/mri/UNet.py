@@ -2,11 +2,11 @@
 Reusable shallow U-Net inference (CPU) for 2D masks, plus a simple CLI.
 
 Exports:
-    load_unet_model(ckpt_path) -> torch.nn.Module
+    load_unet_model(ckpt_path) -> torch.nn.Module (CPU)
     make_masks(img2d, model=None, threshold=0.5) -> (fg, bg)
 
 CLI:
-    python seg/Unet.py --image path/to/image.npy --out-dir output_masks --ckpt model/unet_shallow.pt
+    python seg/Unet.py --image path/to/image.npy --out-dir output_masks --ckpt backend/seg/mri/models/unet.pt
 """
 
 from __future__ import annotations
@@ -22,7 +22,8 @@ import torch
 from monai.networks.nets import UNet
 
 
-DEFAULT_CKPT = Path("model/unet_shallow.pt")
+# Default checkpoint lives alongside this module under backend/seg/mri/models/unet.pt
+DEFAULT_CKPT = Path(__file__).resolve().parent / "models" / "unet.pt"
 DEFAULT_THRESHOLD = 0.5
 
 
@@ -76,12 +77,20 @@ def load_unet_model(ckpt_path: Path = DEFAULT_CKPT) -> torch.nn.Module:
 
 def make_masks(img: np.ndarray, model: torch.nn.Module | None = None, threshold: float = DEFAULT_THRESHOLD) -> Tuple[np.ndarray, np.ndarray]:
     """
-    img: 2D float32 array
+    img: 2D numeric array. Internally min-max normalized to [0,1] per slice.
     model: optional UNet; if None, loads cached model
     returns: (fg, bg) uint8 masks in {0,1}
     """
     if img.ndim != 2:
         raise ValueError(f"Expected 2D array, got shape {img.shape}")
+
+    # normalize to [0,1] to match training/other script behavior
+    img = img.astype(np.float32, copy=False)
+    mn, mx = float(img.min()), float(img.max())
+    if mx > mn:
+        img = (img - mn) / (mx - mn)
+    else:
+        img = np.zeros_like(img, dtype=np.float32)
 
     if model is None:
         model = load_unet_model()
@@ -115,7 +124,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run shallow U-Net on a single 2D image (CPU).")
     parser.add_argument("--image", type=Path, required=True, help="Path to input image (.npy, .npz, or standard image).")
     parser.add_argument("--out-dir", type=Path, default=Path("output_masks"), help="Directory to save masks.")
-    parser.add_argument("--ckpt", type=Path, default=DEFAULT_CKPT, help="Path to checkpoint (default: model/unet_shallow.pt).")
+    parser.add_argument("--ckpt", type=Path, default=DEFAULT_CKPT, help="Path to checkpoint (default: models/unet.pt).")
     parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help="Foreground threshold (default: 0.5).")
     args = parser.parse_args()
 

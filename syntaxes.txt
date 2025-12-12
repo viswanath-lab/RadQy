@@ -15,3 +15,5 @@ ln -s "/Users/amirsadri/Library/CloudStorage/GoogleDrive-ars329@case.edu/My Driv
 git reset --hard HEAD
 
 python backend/radqy.py --inputdir examples/mri --scantype mri --segmenter otsuhull --middle-percent 90 --num-samples 3 --save-fgbg
+
+python tests/py/sample-random-seg_masks.py --

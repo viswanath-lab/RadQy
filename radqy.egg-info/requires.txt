@@ -1,13 +1,10 @@
-imageio
+numpy
 pandas
 pydicom
-PyYAML
 Pillow
-numpy
-scipy
-scikit-image
-torch
-monai
+PyYAML
 argcomplete
 questionary
 typer
+click
+rich

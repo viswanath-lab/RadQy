@@ -1,3 +1,4 @@
+# PYTHON_ARGCOMPLETE_OK
 import argparse
 import os
 import datetime
@@ -10,6 +11,10 @@ from typing import List
 import importlib.util
 import importlib
 import warnings
+try:
+    import argcomplete
+except ImportError:  # optional; used only for shell completion
+    argcomplete = None
 
 # Ensure repo root is on sys.path when executed as a script
 THIS_DIR = Path(__file__).resolve().parent
@@ -26,6 +31,7 @@ from pydicom.multival import MultiValue
 from pydicom.errors import InvalidDicomError
 from backend.iqm.mri import get_iqm_registry
 warnings.filterwarnings("ignore", message=".*maximum length of 16 allowed for VR SH.*")
+warnings.filterwarnings("ignore", message="Invalid value for VR UI.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def _norm(p): return str(Path(p).resolve())
@@ -83,38 +89,72 @@ def load_default_segmenter():
         from seg.mri.AdaptiveBorderSeg import make_masks as default_masks  # type: ignore
     return default_masks, "Default: AdaptiveBorderSeg"
 
+SEGMENTER_CHOICES = ["adaptiveborder", "otsuhull", "regiongrowing", "unet", "fcn", "mobilenet"]
+
+
 def resolve_segmenter(segmenter_arg: str):
     """
     Resolve a segmenter based on CLI arg. Supports:
-    - blank -> default AdaptiveBorderSeg
-    - name 'otsuhull' -> backend.seg.mri.OtsuHull.make_masks
-    - path to a .py file exporting make_masks or segment
-    - dotted module path exporting make_masks or segment
+    - adaptiveborder (default)
+    - otsuhull -> backend.seg.mri.OtsuHull.make_masks
+    - unet -> backend.seg.mri.UNet.make_masks with backend/seg/mri/models/unet.pt on CPU
+    - regiongrowing/fcn/mobilenet -> reserved (not implemented here; raises with guidance)
     Returns (callable, name_str).
     """
     if not segmenter_arg:
-        return load_default_segmenter()
+        segmenter_arg = "adaptiveborder"
 
     arg = segmenter_arg.strip()
     lowered = arg.lower()
     builtin_map = {
+        "adaptiveborder": "backend.seg.mri.AdaptiveBorderSeg",
         "otsuhull": "backend.seg.mri.OtsuHull",
         "otsu-hull": "backend.seg.mri.OtsuHull",
         "otsu_hull": "backend.seg.mri.OtsuHull",
+        "unet": "backend.seg.mri.UNet",
+        "u-net": "backend.seg.mri.UNet",
+        "u_net": "backend.seg.mri.UNet",
+        "regiongrowing": None,
+        "fcn": None,
+        "mobilenet": None,
     }
 
-    # Built-in: OtsuHull by name
+    # Built-in: AdaptiveBorder / OtsuHull / UNet by name
     if lowered in builtin_map:
         mod_name = builtin_map[lowered]
+        if mod_name is None:
+            raise NotImplementedError(
+                f"Segmenter '{lowered}' is reserved but not implemented in this repo. "
+                "Available: adaptiveborder, otsuhull, unet."
+            )
         mod = importlib.import_module(mod_name)
+        if mod_name.endswith("AdaptiveBorderSeg"):
+            if hasattr(mod, "make_masks"):
+                return mod.make_masks, "AdaptiveBorderSeg"
+            raise AttributeError(f"{mod_name} does not expose make_masks()")
+        # UNet: load once on CPU with default checkpoint under repo_root/models/unet.pt
+        if mod_name.endswith("UNet"):
+            if hasattr(mod, "make_masks"):
+                ckpt_path = getattr(mod, "DEFAULT_CKPT", None)
+                if ckpt_path is None or not Path(ckpt_path).exists():
+                    raise FileNotFoundError(
+                        "UNet checkpoint not found. Expected at "
+                        f"{ckpt_path or '[unset DEFAULT_CKPT]'}; place your model at "
+                        "backend/seg/mri/models/unet.pt or update DEFAULT_CKPT."
+                    )
+                # eager load to surface errors early
+                mod.load_unet_model(Path(ckpt_path))
+                return mod.make_masks, "UNet"
+        # OtsuHull or other module exposing make_masks/segment
         if hasattr(mod, "make_masks"):
-            return mod.make_masks, "OtsuHull"
+            return mod.make_masks, "OtsuHull" if "OtsuHull" in mod_name else mod_name
         if hasattr(mod, "segment"):
             def wrapper(img):
                 fg = mod.segment(img)
                 bg = (1 - fg).astype(np.uint8)
                 return fg, bg
-            return wrapper, "OtsuHull"
+            name = "OtsuHull" if "OtsuHull" in mod_name else mod_name
+            return wrapper, name
         raise AttributeError(f"{mod_name} does not expose make_masks() or segment()")
 
     # Path to a custom file
@@ -407,8 +447,17 @@ def main():
     ap.add_argument("--middle-percent", type=int, default=100)
     ap.add_argument("--num-samples", type=int, default=1)
     ap.add_argument("--save-fgbg", action="store_true",help="If set, save per-participant foreground/background masks.")
-    ap.add_argument("--segmenter", type=str, default="", help="Optional: path to a .py segmentation file (e.g. 'amir.py').")
+    ap.add_argument(
+        "--segmenter",
+        type=str,
+        default="adaptiveborder",
+        choices=SEGMENTER_CHOICES,
+        help="Segmentation method",
+    )
     ap.add_argument("--verbose", action="store_true", help="Print per-file processing progress.")
+
+    if argcomplete is not None:
+        argcomplete.autocomplete(ap)
 
     args = ap.parse_args()
 

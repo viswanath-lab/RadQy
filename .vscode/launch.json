@@ -1,35 +1,30 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-        "label": "clear-terminal",
-        "type": "shell",
-        "command": "clear"
-        }
-    ],
-    "configurations": [
-        {
-            "name": "Run RadQy MRI",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "backend.radqy",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            },
-            "args": [
-                "--inputdir",
-                "/Users/amirsadri/Library/CloudStorage/GoogleDrive-ars329@case.edu/My Drive/RadQy/input/X1",
-                "--scantype",
-                "mri",
-                "--save-fgbg",
-                "--middle-percent",
-                "50",
-                "--num-samples",
-                "2"
-            ]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "RadQy (choose segmenter)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "backend.radqy",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "args": [
+        "--inputdir",
+        "examples/mri",
+        "--scantype",
+        "mri",
+        "--segmenter",
+        "otsuhull",
+        "--middle-percent",
+        "90",
+        "--num-samples",
+        "3",
+        "--save-fgbg"
+      ]
+    }
+  ]
 }

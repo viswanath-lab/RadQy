@@ -28,15 +28,20 @@ def safe_name(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", s)
 
 
-def load_segmenter(name: str) -> Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]]:
+def load_segmenter(name: str, ckpt: Path | None = None) -> Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """
     Return a callable img -> (fg, bg) for a known segmenter name.
-    Currently supports only 'otsuhull'.
+    Supports: otsuhull, unet.
     """
     key = name.lower()
     if key in {"otsuhull", "otsu-hull", "otsu_hull"}:
         from backend.seg.mri.OtsuHull import make_masks  # type: ignore
         return make_masks
+    if key in {"unet", "u-net", "u_net"}:
+        from backend.seg.mri import UNet  # type: ignore
+        model_path = ckpt if ckpt is not None else UNet.DEFAULT_CKPT
+        model = UNet.load_unet_model(model_path)
+        return lambda img: UNet.make_masks(img, model=model)
     raise ValueError(f"Unknown segmenter '{name}'. Extend load_segmenter to add more.")
 
 
@@ -71,6 +76,7 @@ def main():
     parser.add_argument("--out", type=str, default=None, help="Output dir for PNGs (default: docs/tex/Figure/MRI/seg).")
     parser.add_argument("--num-vols", type=int, default=10, help="Number of volumes to sample.")
     parser.add_argument("--segmenter", type=str, default="otsuhull", help="Segmenter name (default: otsuhull).")
+    parser.add_argument("--unet-ckpt", type=Path, default=None, help="Checkpoint path for UNet (default: models/unet.pt).")
     parser.add_argument("--seed", type=int, default=None, help="Random seed.")
     args = parser.parse_args()
 
@@ -80,7 +86,7 @@ def main():
 
     rng = np.random.default_rng(args.seed)
     sys.path.append(str(repo_root()))
-    seg_fn = load_segmenter(args.segmenter)
+    seg_fn = load_segmenter(args.segmenter, ckpt=args.unet_ckpt)
 
     # Always clean output directory before saving new results
     for png in out_dir.glob("*.png"):

@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: radqy
+Version: 0.1.0
+Summary: RadQy command-line tool
+Requires-Python: >=3.8
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: pydicom
+Requires-Dist: Pillow
+Requires-Dist: PyYAML
+Requires-Dist: argcomplete
+Requires-Dist: questionary
+Requires-Dist: typer
+Requires-Dist: click
+Requires-Dist: rich
