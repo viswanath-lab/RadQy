@@ -40,33 +40,7 @@ def run(
         help="If set, save per-participant foreground/background masks.",
         show_default=True,
     ),
-    interactive: bool = typer.Option(
-        False,
-        "--interactive",
-        "-i",
-        help="Select segmenter interactively"
-    )
 ):
-    if interactive:
-        try:
-            import questionary
-        except ImportError:
-            typer.secho(
-                "questionary is required for interactive selection. Install it with: pip install questionary",
-                fg="red",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-
-        segmenter = questionary.select(
-            "Select segmenter:",
-            choices=[s.value for s in Segmenter],
-        ).ask()
-
-        if segmenter is None:
-            raise typer.Exit(code=1)
-        segmenter = Segmenter(segmenter)
-
     typer.echo(
         f"Selected segmenter: {segmenter.value if isinstance(segmenter, Segmenter) else segmenter} | "
         f"num_samples={num_samples} | "

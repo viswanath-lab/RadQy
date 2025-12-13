@@ -6,10 +6,5 @@ Pillow
 numpy
 scipy
 scikit-image
-# Optional: deep models (needed for UNet/FCN segmenters)
 torch
 monai
-# Optional: CLI niceties
-argcomplete    # shell completion for argparse CLI
-questionary    # interactive segmenter picker
-typer          # Typer-based CLI (pulls in click + rich)
