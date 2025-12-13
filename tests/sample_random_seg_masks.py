@@ -2,10 +2,11 @@
 Sample a few random MRI volumes and slices, run a segmenter, and write image/fg/bg PNGs.
 
 Default: root=examples/MRI, segmenter=OtsuHull, pick up to 10 volumes, one random slice each.
-Outputs go to docs/tex/Figure/MRI/seg with filenames:
+Outputs go to docs/tex/Figure/MRI/seg/<segmenter> with filenames:
     <volume_name>_<slice>_im.png
     <volume_name>_<slice>_fg.png
     <volume_name>_<slice>_bg.png
+CSV index saved as docs/tex/Figure/MRI/seg/<segmenter>/index.csv
 """
 
 import argparse
@@ -21,26 +22,34 @@ import pydicom
 
 
 def repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    # tests/ -> repo root is one level up
+    return Path(__file__).resolve().parents[1]
 
 
 def safe_name(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", s)
 
 
-def load_segmenter(name: str, ckpt: Path | None = None) -> Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]]:
+def load_segmenter(name: str) -> Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """
     Return a callable img -> (fg, bg) for a known segmenter name.
-    Supports: otsuhull, unet.
+    Supports: otsuhull, adaptiveborder, unet, fcn.
     """
     key = name.lower()
     if key in {"otsuhull", "otsu-hull", "otsu_hull"}:
         from backend.seg.mri.OtsuHull import make_masks  # type: ignore
         return make_masks
+    if key in {"adaptiveborder", "adaptive-border", "adaptive_border"}:
+        from backend.seg.mri.AdaptiveBorderSeg import make_masks  # type: ignore
+        return make_masks
     if key in {"unet", "u-net", "u_net"}:
         from backend.seg.mri import UNet  # type: ignore
-        model_path = ckpt if ckpt is not None else UNet.DEFAULT_CKPT
-        model = UNet.load_unet_model(model_path)
+        model = UNet.load_unet_model(UNet.DEFAULT_CKPT)
+        return lambda img: UNet.make_masks(img, model=model)
+    if key in {"fcn"}:
+        from backend.seg.mri import UNet  # type: ignore
+        fcn_ckpt = repo_root() / "backend" / "seg" / "mri" / "models" / "fcn.pt"
+        model = UNet.load_unet_model(fcn_ckpt)
         return lambda img: UNet.make_masks(img, model=model)
     raise ValueError(f"Unknown segmenter '{name}'. Extend load_segmenter to add more.")
 
@@ -70,31 +79,50 @@ def to_uint8(img: np.ndarray) -> np.ndarray:
     return (x * 255.0).astype(np.uint8)
 
 
+def parse_volume_info(name: str) -> tuple[str, str, str]:
+    """
+    Expect folder name like {bodypart}_{sequence}_{plane}, e.g., Abdomen_T1_FSE_AX.
+    Returns (bodypart, sequence, plane); falls back to empty strings if unavailable.
+    """
+    parts = name.split("_")
+    if len(parts) >= 3:
+        body = parts[0]
+        sequence = parts[1]
+        plane = "_".join(parts[2:])
+        return body, sequence, plane
+    # Fallback when format is unexpected
+    return (parts + ["", "", ""])[:3]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Sample random MRI slices and save segmentation masks.")
     parser.add_argument("--root", type=str, default=None, help="Root folder containing volume subfolders (default: examples/MRI).")
-    parser.add_argument("--out", type=str, default=None, help="Output dir for PNGs (default: docs/tex/Figure/MRI/seg).")
+    parser.add_argument("--out", type=str, default=None, help="Output dir (default: docs/tex/Figure/MRI/seg/<segmenter>).")
     parser.add_argument("--num-vols", type=int, default=10, help="Number of volumes to sample.")
     parser.add_argument("--segmenter", type=str, default="otsuhull", help="Segmenter name (default: otsuhull).")
-    parser.add_argument("--unet-ckpt", type=Path, default=None, help="Checkpoint path for UNet (default: models/unet.pt).")
     parser.add_argument("--seed", type=int, default=None, help="Random seed.")
     args = parser.parse_args()
 
+    # Default root: <repo>/examples/MRI
     root = Path(args.root) if args.root else repo_root() / "examples" / "MRI"
-    out_dir = Path(args.out) if args.out else repo_root() / "docs" / "tex" / "Figure" / "MRI" / "seg"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    if not root.exists():
+        print(f"Root folder not found: {root}")
+        return
+    seg_name = safe_name(args.segmenter.lower())
+    base_out = Path(args.out) if args.out else repo_root() / "docs" / "tex" / "Figure" / "MRI" / "seg" / seg_name
+    base_out.mkdir(parents=True, exist_ok=True)
 
     rng = np.random.default_rng(args.seed)
     sys.path.append(str(repo_root()))
-    seg_fn = load_segmenter(args.segmenter, ckpt=args.unet_ckpt)
+    seg_fn = load_segmenter(args.segmenter)
 
     # Always clean output directory before saving new results
-    for png in out_dir.glob("*.png"):
+    for png in base_out.glob("*.png"):
         try:
             png.unlink()
         except OSError:
             pass
-    idx_csv = out_dir / "index.csv"
+    idx_csv = base_out / "index.csv"
     if idx_csv.exists():
         try:
             idx_csv.unlink()
@@ -129,26 +157,43 @@ def main():
             continue
 
         stem = f"{safe_name(vol_dir.name)}_{slice_label}"
-        im_path = out_dir / f"{stem}_im.png"
-        fg_path = out_dir / f"{stem}_fg.png"
-        bg_path = out_dir / f"{stem}_bg.png"
+        im_path = base_out / f"{stem}_im.png"
+        fg_path = base_out / f"{stem}_fg.png"
+        bg_path = base_out / f"{stem}_bg.png"
 
+        body, sequence, plane = parse_volume_info(vol_dir.name)
+        # paths relative to docs/tex for LaTeX-friendly includegraphics
+        tex_root = repo_root() / "docs" / "tex"
+        im_rel = im_path.relative_to(tex_root).as_posix()
+        fg_rel = fg_path.relative_to(tex_root).as_posix()
+        bg_rel = bg_path.relative_to(tex_root).as_posix()
         try:
             imageio.imwrite(im_path, to_uint8(img_f32))
             imageio.imwrite(fg_path, (fg.astype(np.uint8) * 255))
             imageio.imwrite(bg_path, (bg.astype(np.uint8) * 255))
             print(f"Wrote {im_path.name}, {fg_path.name}, {bg_path.name}")
-            rows.append((len(rows) + 1, str(im_path), str(fg_path), str(bg_path)))
+            rows.append(
+                (
+                    len(rows) + 1,
+                    root.name,
+                    body,
+                    sequence,
+                    plane,
+                    slice_label,
+                    im_rel,
+                    fg_rel,
+                    bg_rel,
+                )
+            )
         except Exception as exc:  # noqa: BLE001
             print(f"Save failed for {dcm_path}: {exc}")
 
     # Write CSV index of saved files
     if rows:
-        idx_csv = out_dir / "index.csv"
         try:
             with idx_csv.open("w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
-                writer.writerow(["#", "im", "fg", "bg"])
+                writer.writerow(["num", "scantype", "bodypart", "sequence", "plane", "slice", "im", "fg", "bg"])
                 writer.writerows(rows)
             print(f"Wrote {idx_csv}")
         except Exception as exc:  # noqa: BLE001
