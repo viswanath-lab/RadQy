@@ -10,8 +10,9 @@ html,body{
   color:var(--color-text);
   font-family:var(--font-body);
   overflow-x: hidden;
-  /* Keep a consistent layout width when panels change height by always reserving the scrollbar */
-  overflow-y: scroll;
+  /* Keep layout width stable without forcing a visible scrollbar on short pages */
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 /* Prevent images/canvas/video from overflowing their boxes (Chrome warning) */

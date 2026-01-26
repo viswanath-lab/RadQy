@@ -87,19 +87,41 @@
     const rowDiv = document.createElement("div");
     rowDiv.className = "image-row";
 
-    const entries = [];
-    if (vis.showImg) entries.push({ kind: "im", sub: "" });
-    if (vis.showFG && avail.hasFG) entries.push({ kind: "fg", sub: "foreground/" });
-    if (vis.showBG && avail.hasBG) entries.push({ kind: "bg", sub: "background/" });
+    const entriesAll = [{ kind: "im", sub: "" }];
+    if (avail.hasFG) entriesAll.push({ kind: "fg", sub: "foreground/" });
+    if (avail.hasBG) entriesAll.push({ kind: "bg", sub: "background/" });
 
-    const channelCount = entries.length || 1;
+    const entriesVisible = [];
+    if (vis.showImg) entriesVisible.push({ kind: "im", sub: "" });
+    if (vis.showFG && avail.hasFG) entriesVisible.push({ kind: "fg", sub: "foreground/" });
+    if (vis.showBG && avail.hasBG) entriesVisible.push({ kind: "bg", sub: "background/" });
+
+    // Always show at least the base image in the grid even if masks are toggled off
+    const thumbEntries = entriesVisible.length ? entriesVisible : [{ kind: "im", sub: "" }];
+
+    const channelCount = thumbEntries.length || 1;
     cell.style.setProperty("--channels", channelCount);
     cell.classList.add("chan-" + channelCount);
 
     const primaryBase = baseDirs[0] || "";
     const sliceSources = [];
+    const lightboxSources = [];
+    const size =
+      (window.DATA &&
+       window.DATA.IMAGE_SIZE &&
+       window.DATA.IMAGE_SIZE[rowIdx]) ||
+      { row: 256, col: 256 };
 
-    entries.forEach(info => {
+    entriesAll.forEach(info => {
+      if (!primaryBase) return;
+      lightboxSources.push({
+        label: info.kind,
+        src: `${primaryBase}${pidFolder}/${info.sub}${fname}`,
+        aspect: `${size.col} / ${size.row}`
+      });
+    });
+
+    thumbEntries.forEach(info => {
       const im = document.createElement("img");
       im.dataset.baseIndex = "0";
       im.dataset.sub = info.sub;
@@ -117,12 +139,6 @@
       setSrcFromBase(0);
       im.alt = `${info.kind}-${fname}`;
       im.loading = "lazy";
-
-      const size =
-        (window.DATA &&
-         window.DATA.IMAGE_SIZE &&
-         window.DATA.IMAGE_SIZE[rowIdx]) ||
-        { row: 256, col: 256 };
 
       im.style.aspectRatio = `${size.col} / ${size.row}`;
 
@@ -149,7 +165,7 @@
 
     const labels = document.createElement("div");
     labels.className = "image-labels";
-    entries.forEach(info => {
+    thumbEntries.forEach(info => {
       const sp = document.createElement("span");
       sp.textContent = info.kind;
       labels.appendChild(sp);
@@ -159,8 +175,9 @@
     // Slice-level lightbox on title click
     idxDiv.style.cursor = "pointer";
     idxDiv.addEventListener("click", () => {
-      if (!sliceSources.length) return;
-      showSliceLightbox(sliceSources, `Slice ${sliceNum}`);
+      const sources = lightboxSources.length ? lightboxSources : sliceSources;
+      if (!sources.length) return;
+      showSliceLightbox(sources, `Slice ${sliceNum}`);
     });
 
     return cell;
