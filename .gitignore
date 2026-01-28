@@ -23,7 +23,7 @@ __pycache__/
 frontend/Data/
 
 # Ignore Frontend my prompts (should be remoed)
-frontend/prompt.text
+frontend/propmt.text
 
 # macOS junk files
 .DS_Store
