@@ -13,7 +13,7 @@
 
   const QC_SYSTEM_PROMPT = `You are an expert medical imaging quality control analyst and scientific report writer with deep knowledge of MRI QC, image quality metrics (IQMs), and unsupervised data analysis. Your task is to generate a comprehensive, professional AI-based QC report using outputs from RadQy. The report should be suitable for researchers, clinicians, and data managers evaluating MRI datasets for reliability, harmonization, and downstream AI training. Follow the required sections and tone: Dataset Overview; IQM Distribution Analysis; Outlier Detection and Severity Ranking; Clustering and Data Structure Analysis; Inter-Cluster Comparison; Cohort and Dataset Comparisons; Visualization-Aware Interpretation; Actionable Recommendations. Keep it concise, evidence-based, and ready to paste into documentation.`;
 
-  const QC_USER_INSTRUCTIONS = `Generate the final QC report. Use ONLY the dataset context provided below; do not invent data you don't see. If certain analyses (e.g., clustering, cohort comparison) are absent in the context, state that they are not available and keep the section concise. Write in polished, scientific prose with clear headings and bullet points where appropriate. Avoid speculative claims.`;
+  const QC_USER_INSTRUCTIONS = `Generate the final QC report. Use ONLY the dataset context provided below; do not invent data you don't see. If certain analyses (e.g., clustering, inter-cluster, cohort/dataset comparisons, visualization) are absent, explicitly note the gap AND add a polite, actionable suggestion tagged with "Suggestion:" that tells the user which RadQy module to run (e.g., clustering, Cohort Finder, visualization) to populate that section. Keep the section concise and never fabricate numbers. Write in polished, scientific prose with clear headings and bullet points where appropriate. Avoid speculative claims.`;
 
   const QC_CHAT_SYSTEM_PROMPT = `You are the RadQy QC assistant. Always answer using the current QC dataset context and QC report provided. Use supplied metric counts, summary stats, max/min (extremes), and unique-value frequency summaries to answer questions (including “highest”, “lowest”, “how many classes/categories”, or “most common”). If a requested metric/field is missing from the dataset, say it is not available. Do not invent numbers. Keep answers concise and practical.`;
 
@@ -95,11 +95,24 @@
     return document.getElementById("reportchat");
   }
 
+  function ensureReportStyles(){
+    if (document.getElementById("report-style-qc")) return;
+    const style = document.createElement("style");
+    style.id = "report-style-qc";
+    style.textContent = `
+      .report-content strong { font-weight: 700; }
+      .report-content .qc-suggestion { color: #b25c00; font-weight: 600; }
+      .report-content .qc-suggestion strong { color: #b25c00; }
+    `;
+    document.head.appendChild(style);
+  }
+
   function ensureReportShell(){
     const host = getReportHost();
     if (!host) return;
     if (host.dataset.ready) return;
     host.dataset.ready = "1";
+    ensureReportStyles();
     host.innerHTML = `
       <div class="report-layout">
         <div class="report-header">
@@ -378,6 +391,8 @@
     md = md.replace(/^###\s*(.+)$/gm, "<h3>$1</h3>");
     md = md.replace(/^##\s*(.+)$/gm, "<h2>$1</h2>");
     md = md.replace(/^#\s*(.+)$/gm, "<h1>$1</h1>");
+    // bold
+    md = md.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     const lines = md.split(/\n/);
     const out = [];
     let inList = false;
@@ -394,7 +409,11 @@
           out.push("</ul>");
           inList = false;
         }
-        if (line.trim() === "") {
+        const trimmed = line.trim();
+        const suggestionMatch = trimmed.match(/^Suggestion:\s*(.*)/i);
+        if (suggestionMatch) {
+          out.push(`<p class="qc-suggestion"><strong>Suggestion:</strong> ${suggestionMatch[1]}</p>`);
+        } else if (trimmed === "") {
           out.push("");
         } else {
           out.push("<p>" + line + "</p>");
