@@ -837,11 +837,9 @@
 
   document.addEventListener("DOMContentLoaded", ()=>{
     ensureReportShell();
+    // Keep the report closed/idle on first load; wait for the user to click
+    // the Report button and confirm before prompting for API unlock.
     STATE.reportVisible = isReportVisible();
-    if (STATE.reportVisible && (!STATE.lastReport || !STATE.lastReport.trim())) {
-      maybeAutoConnect();
-      maybeAutoGenerate();
-    }
   });
 
   document.addEventListener("radqy:panel-visibility-changed", (e)=>{

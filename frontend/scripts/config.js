@@ -7,7 +7,7 @@ window.RADQY_CONFIG = {
   // Landing/splash
   viewResultsText: "View Results",
   uploadHintText: "Upload the <code>results.tsv</code> file located in your RadQy output directory",
-  outputDir: ".\\UserInterface\\Data\\outdir",
+  outputDir: ".\\radqy\\frontend\\Data\\outdir",
 
   // OPT / Custom Selection
   customSelectionExample: "PSNR > 2 OR 3<=snr1<80 AND CPP<=15 or mfr=='NA'",

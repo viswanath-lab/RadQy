@@ -110,6 +110,14 @@ RADQY._write = function (map) {
 
 RADQY._vis = RADQY._read();
 
+// Always start with the Report panel closed so the API unlock prompt
+// does not appear immediately on page load. Users can open it explicitly
+// via the Report button/confirmation flow.
+if (RADQY._vis.report) {
+  RADQY._vis.report = false;
+  RADQY._write(RADQY._vis);
+}
+
 // any non-report panel on?
 RADQY.isAnyNonReportOn = function () {
   return RADQY.MAIN.some(n => !!RADQY._vis[n] && n !== "report");
