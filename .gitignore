@@ -1,0 +1,43 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editor settings
+.vscode/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Packaging/metadata
+*.egg-info/
+
+# Ignore Frontend Data folder (containing img/fg/bg thumbnails)
+frontend/Data/
+
+# Ignore Frontend my prompts (should be remoed)
+frontend/propmt.text
+
+# macOS junk files
+.DS_Store
+
+# Ignore everything in docs/
+docs/**
+
+# BUT track PDF files
+!docs/**/*.pdf
+
+# Private TeX stored in Google Drive
+docs/tex/
+
+.github/
+syntaxes.txt
+.vscode/
+desktop.ini
