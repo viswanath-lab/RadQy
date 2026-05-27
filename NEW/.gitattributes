@@ -1,0 +1,6 @@
+*.nii filter=lfs diff=lfs merge=lfs -text
+*.nii.gz filter=lfs diff=lfs merge=lfs -text
+*.dcm filter=lfs diff=lfs merge=lfs -text
+*.DCM filter=lfs diff=lfs merge=lfs -text
+*.mha filter=lfs diff=lfs merge=lfs -text
+*.MHA filter=lfs diff=lfs merge=lfs -text

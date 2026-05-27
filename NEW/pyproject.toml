@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radqy"
+version = "0.1.0"
+description = "RadQy command-line tool"
+requires-python = ">=3.8"
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "pydicom",
+    "Pillow",
+    "PyYAML"
+]
+
+[project.scripts]
+radqy = "backend.cli:main"
+
+
+[tool.setuptools.packages.find]
+include = ["backend"]
