@@ -1,0 +1,120 @@
+/*************************************************
+ * DESIGN TOKENS
+ *************************************************/
+
+:root{
+
+  /*******************  FONTS  *******************/
+  --font-heading: "Crimson Pro", serif;
+  --font-body: "Open Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+
+
+  /*******************  COLORS  ******************/
+  /* Brand / theme */
+  --color-emory-blue:   #002F6C;
+  --color-emory-yellow: #F2A900;
+  --color-dogwood:      #F6F6F6;
+  --color-waterhub:     #0033A0;
+  --color-umap-metric:  #1c7c54;  /* distinct green for distanceFn arrow */
+
+  /* Neutrals */
+  --color-bg:           #ffffff;
+  --color-text:         #1c1e21;
+  --color-muted:        #6b7280;
+  --color-border:       #d1d5db;
+
+  /* States */
+  --color-btn-hover:    #002F6C;   /* hover color (deep blue) */
+
+  /* ---------------------------------- */
+  /* CAT 1 — Blue */
+  /* ---------------------------------- */
+  --color-base-cat1:   #c7d8ff;   /* light blue */
+  --color-hover-cat1:  #3b6ed9;   /* medium blue */
+  --color-select-cat1: #0b2a63;   /* deep navy blue */
+
+  /* ---------------------------------- */
+  /* CAT 2 — Magenta/Pink */
+  /* ---------------------------------- */
+  --color-base-cat2:   #f6b7ce;   /* light rose */
+  --color-hover-cat2:  #e85c92;   /* medium pink */
+  --color-select-cat2: #b71575;   /* dark magenta */
+
+  /* ---------------------------------- */
+  /* CAT 3 — Mint/Teal */
+  /* ---------------------------------- */
+  --color-base-cat3:   #90ffe0;   /* light mint */
+  --color-hover-cat3:  #2f8a70;   /* medium teal */
+  --color-select-cat3: #0f4538;   /* dark green-teal */
+
+  /* ---------------------------------- */
+  /* CAT 4 — Amber/Orange */
+  /* ---------------------------------- */
+  --color-base-cat4:   #ffddb3;   /* light amber */
+  --color-hover-cat4:  #e98a2b;   /* medium orange */
+  --color-select-cat4: #8c3f00;   /* deep burnt orange */
+
+  /* ---------------------------------- */
+  /* CAT 5 — Purple/Violet */
+  /* ---------------------------------- */
+  --color-base-cat5:   #e2caff;   /* light lavender */
+  --color-hover-cat5:  #8e63e6;   /* medium violet */
+  --color-select-cat5: #3f197e;   /* deep royal purple */
+
+  /* ---------------------------------- */
+  /* CAT 6 — Teal/Navy */
+  /* ---------------------------------- */
+  --color-base-cat6:   #c2f2f0;   /* light aqua */
+  --color-hover-cat6:  #2a6b6b;   /* teal */
+  --color-select-cat6: #0f2f34;   /* deep blue-green */
+
+  /* TAG — Light Yellow-Gold */
+  --color-tag: #fff6c2;     /* soft warm pastel yellow */
+
+  /* IQM — Light Sky Blue */
+  --color-iqm: #d6f0ff;     /* clean, technical pastel blue */
+
+  /* EXT — Light Coral Peach */
+  --color-ext: #ffe0dd;     /* very soft salmon-pink */
+
+  /* AUX — Light Lilac Lavender */
+  --color-aux: #f2e4ff;     /* calm, neutral violet-lavender */
+
+  /* Pantone Red 032C */
+  --color-pantone-red: #ef3340;
+  --color-pantone-red-dark: #c62a35;
+
+
+  --color-black: #fffff;
+  --color-psharp: #f3f4ff;
+
+  /*****************  SPACING  *******************/
+  --space-4:   4px;
+  --space-8:   8px;
+  --space-12: 12px;
+  --space-16: 16px;
+
+
+  /*****************  RADII  *********************/
+  --radius-sm: 6px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+
+
+  /*****************  BUTTONS  *******************/
+  --btn-h-big: 40px;
+  --btn-h-mid: 22px;
+  --btn-h-sm:  20px;
+
+  --btn-pad-x: 14px;
+  --btn-pad-y: 6px;
+
+
+  /*****************  SHADOWS  *******************/
+  --shadow-1: 0 1px 2px rgba(0,0,0,.06),
+              0 1px 1px rgba(0,0,0,.04);
+
+
+  /*****************  LAYOUT  ********************/
+  --page-pad-x: 10px;  /* shared horizontal padding for header and panels */
+}

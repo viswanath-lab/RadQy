@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RadQy</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="stylesheet" href="css/table.css">
+  <link rel="stylesheet" href="css/legend.css">
+  <link rel="stylesheet" href="css/opt.css">
+  <link rel="stylesheet" href="css/colorby.css">
+  <link rel="stylesheet" href="css/pcp.css">
+  <link rel="stylesheet" href="css/bar.css">
+  <link rel="stylesheet" href="css/image.css">
+  <link rel="stylesheet" href="css/umap.css">
+  <link rel="stylesheet" href="css/report.css">
+</head>
+
+<body class="is-splash">
+  <header class="header">
+    <div class="brand">RadQy</div>
+
+    <div class="row topcenter">
+      <button id="btntable"  class="btn btnbig">Table</button>
+      <button id="btnchart"  class="btn btnbig">Chart</button>
+      <button id="btnumap"   class="btn btnbig">UMAP</button>
+      <button id="btnimage"  class="btn btnbig">Image</button>
+      <button id="btnfgmask" class="btn btnbig">FG Mask</button>
+      <button id="btnbgmask" class="btn btnbig">BG Mask</button>
+      <button id="btnreport" class="btn btnbig">Report</button>
+    </div>
+
+    <div class="rightstack">
+      <button id="btnreset" class="btn btnbig btnwarn">Reset</button>
+      <div id="infometa" class="meta">Meta info eg Scantype MRI</div>
+    </div>
+  </header>
+
+  <div id="report-open-banner" style="display:none;">
+    <span id="report-open-text"></span>
+    <button type="button" id="report-open-yes" class="btn btnsm">Open</button>
+    <button type="button" id="report-open-no"  class="btn btnsm">Cancel</button>
+  </div>
+
+  <!-- NEW: OPT banner in the SAME location -->
+<div id="opt-open-banner" style="display:none;">
+  <span id="opt-open-text"></span>
+  <button type="button" id="opt-open-ok" class="btn btnsm">OK</button>
+</div>
+
+<!-- Transparent overlay that blocks everything while OPT banner is visible -->
+<div id="opt-blocker" style="display:none;"></div>
+
+  <!-- Splash -->
+  <section id="splash" class="center-stage">
+    <label for="upload-input" id="upload-button" class="btn btnbig">View Results</label>
+    <p id="upload-hint" class="upload-hint"></p>
+    <input id="upload-input" name="upload-input" type="file" accept=".tsv,.txt" hidden/>
+  </section>
+
+  <!-- MAIN PANELS -->
+  <main class="grid">
+
+    <!-- ================== TABLE PANEL ================== -->
+    <section id="paneltable" class="panel">
+      <div id="tablehost-wrapper">
+        <div id="tablehost"></div>
+
+        <div class="tabletools">
+          <button id="btncopy" class="btn btnmid">Copy</button>
+          <button id="btnsave" class="btn btnmid">Save</button>
+          <button id="btnselect" class="btn btnmid">Select</button>
+          <button id="btndeselect" class="btn btnmid">Deselect</button>
+          <button id="btndelete" class="btn btnmid">Delete</button>
+
+          <!-- ADD dropdown -->
+          <div class="menu-wrap add-wrap">
+            <button id="btnadd" class="btn btnmid hasmenu">Add</button>
+            <div id="add-menu" class="menu-drop">
+              <button class="menu-item" data-action="aux">Column</button>
+              <button class="menu-item" data-action="ext">Load</button>
+            </div>
+          </div>
+
+          <!-- METRICS dropdown -->
+          <div class="menu-wrap metrics-wrap">
+            <button id="btnmetrics" class="btn btnmid hasmenu">Metrics</button>
+            <div id="sb-metrics-menu" class="menu-drop"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================== OPTIONS & LEGEND ================== -->
+        <div class="panelrow-two">
+      <!-- OPT panel -->
+      <section id="panelopt" class="panel panelthin" data-reserve>
+      <div class="toolbar">
+        <input class="optinput" id="customsel" name="customsel">
+        <button id="btnapplyopt" class="btn btnsm">Apply</button>
+      </div>
+
+      <!-- OPT message banner -->
+      <div id="opt-message-banner">
+        <span id="opt-message-text"></span>
+      </div>
+    </section>
+
+
+      <!-- LEGEND panel -->
+      <section id="panellegend" class="panel panelthin">
+        <div id="legendhost"></div>
+      </section>
+
+      <!-- COLOR-BY panel -->
+      <section id="panelcolor" class="panel panelthin">
+        <div class="chart-color-group">
+          <span class="ctl-label">Color by</span>
+          <button id="chartColor" class="btn btnsm hasmenu"></button>
+        </div>
+      </section>
+    </div>
+
+
+    <!-- ================== CHART PANEL ================== -->
+    <section id="panelchart" class="panel">
+      <div id="chart-shell">
+        <div class="chart-top-row">
+          <button id="vis-switch-btn" class="btn btnlg">Switch to BAR</button>
+
+          <div id="bar-controls-dock" class="chart-controls" style="display:flex; align-items:center; gap:10px; margin-left:12px;">
+            <div id="bar-metric-wrap" class="radqy-select">
+              <label for="bar-metric-select" class="ctl-label" style="margin-right:4px;">Measure by</label>
+              <button id="bar-metric-select" class="radqy-select__btn"></button>
+              <div class="radqy-select__menu"></div>
+            </div>
+
+            <div id="bar-sort-wrap" class="chart-sort" style="display:none; align-items:center; gap:6px;">
+              <label for="bar-sort-select" class="ctl-label" style="margin-right:4px;">Sort by</label>
+              <div class="radqy-select">
+                <button id="bar-sort-select" class="radqy-select__btn"></button>
+                <div class="radqy-select__menu"></div>
+              </div>
+              <button id="bar-sort-order" class="btn btnsm" aria-label="Toggle sort order"></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="parac-svg-container" class="chart-pane"></div>
+        <div id="chart-svg-container" class="chart-pane" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- ================== UMAP PANEL ================== -->
+    <section id="panelumap" class="panel">
+      <div class="toolbar umap-toolbar">
+        <div class="umap-labelby">
+          <span class="ctl-label">Label by</span>
+          <button id="umapLabelBtn" class="btn btnsm hasmenu">Label by</button>
+          <div id="umap-label-menu" class="menu-drop"></div>
+        </div>
+        <h3 class="umap-title">UMAP hyperparameters</h3>
+        <div class="umap-form" style="margin:0;">
+          <label class="ctl-label" for="umap_components">nComponents</label>
+          <input id="umap_components" name="umap_components" class="ctrlsm" type="number" min="2" max="10">
+
+          <label class="ctl-label" for="umap_neighbors">nNeighbors</label>
+          <input id="umap_neighbors" name="umap_neighbors" class="ctrlsm" type="number" min="1">
+
+          <label class="ctl-label" for="umapMetricBtn">distanceFn</label>
+          <div class="umap-metric-dropdown umap-metric-select">
+            <button id="umapMetricBtn" class="ctrlsm umap-metric-btn hasmenu" type="button"></button>
+            <div id="umapMetricMenu" class="umap-metric-menu"></div>
+          </div>
+
+          <label class="ctl-label" for="umap_mindist">minDist</label>
+          <input id="umap_mindist" name="umap_mindist" class="ctrlsm" type="number" step="0.01">
+
+          <label class="ctl-label" for="umap_spread">Spread</label>
+          <input id="umap_spread" name="umap_spread" class="ctrlsm" type="number" step="0.1">
+        </div>
+        <div class="umap-actions">
+          <button id="btnCohortFinder" class="btn btnlg">Cohort Finder</button>
+        </div>
+      </div>
+
+      <div id="umap-plotwrap">
+        <div id="umaphost"></div>
+        <div id="umap-modebar-rail"></div>
+      </div>
+    </section>
+
+    <!-- ================== IMAGE PANEL ================== -->
+    <section id="panelimage" class="panel">
+      <div id="imagehost" class="image-panel-content"></div>
+    </section>
+
+
+
+    <!-- ================== REPORT PANEL ================== -->
+    <aside id="panelreport" class="panel" hidden>
+      <!-- <h2>AI Report</h2> -->
+      <div id="reporthost"></div>
+      <div id="reportchat"></div>
+    </aside>
+  </main>
+
+  <!-- External load input -->
+  <input id="extfile-input" name="extfile-input" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" hidden>
+
+  <!-- JS Libraries -->
+  <script src="libs/d3-3.5.17/d3.min.js"></script>
+  <script src="libs/d3-tip-master/index.js"></script>
+  <script src="libs/jquery-1.12.4/jquery.min.js"></script>
+  <script src="libs/bootstrap/js/popper.min.js"></script>
+  <script src="libs/bootstrap/js/bootstrap.min.js"></script>
+  <script src="libs/bootstrap/js/bootstrap-select.min.js"></script>
+  <script src="libs/xlsx/xlsx.full.min.js"></script>
+  <script src="libs/umap-js/umap-js.min.js"></script>
+  <script src="libs/plotly/plotly.min.js"></script>
+
+  <!-- JS -->
+  <script src="scripts/config.js"></script>
+  <script src="scripts/events.js"></script>
+  <script src="scripts/app.js"></script>
+  <script src="scripts/log.js"></script>
+  <script src="scripts/header.js"></script>
+  <script src="scripts/data.js"></script>
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/state.js"></script>
+  <script src="scripts/table.js"></script>
+  <script src="scripts/opt.js"></script>
+  <script src="scripts/legend.js"></script>
+  <script src="scripts/colorby.js"></script>
+  <script src="scripts/pcp.js"></script>
+  <script src="scripts/bar.js"></script>
+  <script src="scripts/image.js"></script>
+  <script src="scripts/umap.js"></script>
+  <script src="scripts/report.js"></script>
+</body>
+</html>

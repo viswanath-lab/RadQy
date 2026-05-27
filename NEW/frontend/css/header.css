@@ -1,0 +1,74 @@
+/* header bar container */
+.header{
+  display:flex;                 /* horizontal layout for brand, center group, reset */
+  align-items:flex-start;           /* let rightstack stack under top edge */
+  gap:10px;                    /* space between brand and center group */
+  padding:5px 16px;            /* inner spacing  distance with horizontal divider*/
+  border-bottom:none;
+  position:sticky;              /* keep header on top while scrolling */
+  top:0;                        /* stick to top */
+  background:var(--color-bg);   /* header background */
+  z-index:10;                   /* above main panels */
+  padding: 12px var(--page-pad-x);
+}
+
+/* brand title RadQy */
+.brand{
+  font-family:var(--font-heading);   /* heading font */
+  font-weight:500;                   /* medium weight */
+  font-size:80px;                    /* big title size */
+  color:var(--color-emory-blue);     /* brand color */
+  letter-spacing:.5px;               /* subtle spacing */
+}
+
+/* make the buttons on the header center between brand and reset */
+.topcenter{
+  margin-left:auto;   /* push center group away from brand */
+  margin-right:auto;  /* push center group away from reset */
+  margin-top:30px;    /* make the center buttons and reset sit a little lower than brand */
+  transform: translateX(50px);
+}
+
+/* right side stack: reset above, meta below, right aligned */
+.rightstack{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;                /* right align both items */
+  gap:6px;                             /* space between Reset and meta */
+  margin-top:80px;                     /* match the center group vertical offset. info up/down*/
+}
+
+/* small meta line under Reset, aligned right */
+.meta{
+  font-size:11px;
+  color:var(--color-muted);
+  line-height:1.2;
+  position: relative;
+  right: 15px;   /* <-- move ONLY the meta text left */
+}
+
+/* draw the divider as part of the header */
+.header::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:5px;                  /* sits just below header content */
+  height:3px;
+  background:var(--color-emory-blue);
+  pointer-events:none;
+}
+
+.meta .meta-label{
+  font-weight:700;
+  color:var(--color-text);
+}
+
+
+/* Active (ON) state for Image / FG / BG buttons */
+.btnon {
+  background-color: var(--color-emory-blue) !important;
+  color: #fff !important;
+  border-color: var(--color-emory-blue) !important;
+  cursor: pointer;
+}

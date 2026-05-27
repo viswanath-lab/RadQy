@@ -1,0 +1,440 @@
+/* =========================================
+ * TABLE TOOLBAR (right side vertical stack)
+ * ========================================= */
+
+/* Ensure all toolbar buttons have consistent size */
+.tabletools button,
+.tabletools .btnmid {
+  width: 100%;
+  min-width: 80px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* small triangle for dropdown menus */
+.hasmenu::after{
+  content:" ▾";
+  font-size:14px;
+  line-height:1;
+  margin-left:0;
+  opacity:1;
+}
+
+/*************************************************
+ * NEW WRAPPER: Keep table + toolbar in one row
+ *************************************************/
+/* Wraps table and toolbar side by side */
+#tablehost-wrapper {
+  display: grid;                       /* grid keeps strict width */
+  grid-template-columns: 1fr auto;     /* table takes space, toolbar stays attached */
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  align-items: start;
+  overflow: visible !important;        /* allows dropdowns to escape table area */
+}
+
+/* scrolling container for the table itself */
+#tablehost {
+  overflow-x: auto !important;         /* horizontal scroll */
+  overflow-y: auto !important;         /* vertical scroll */
+  width: 100%;
+  max-width: 100%;
+  display: block;                      /* REQUIRED for scroll bar */
+  white-space: nowrap;                 /* keeps table in one line */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+
+  /* limit height to about 7 rows */
+  max-height: calc(7 * 24px + 40px);
+}
+
+/* Pantone Red styling for Delete */
+#btndelete {
+  background: var(--color-pantone-red);
+  border-color: var(--color-pantone-red);
+  color: #fff;
+}
+#btndelete:hover:not(:disabled) {
+  background: var(--color-pantone-red-dark);
+  border-color: var(--color-pantone-red-dark);
+  color: #fff;
+}
+
+/* toolbar column on the right */
+.tabletools {
+  flex: 0 0 90px;
+  position: sticky;
+  top: 35px;
+  right: 0;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+  z-index: 5000;
+}
+
+/*************************************************
+ * TABLE ELEMENT
+ *************************************************/
+
+.radqy-table{
+  width:max-content;          /* grow only as wide as needed */
+  min-width:100%;             /* but at least full panel width */
+  border-collapse:collapse;
+  table-layout:fixed;
+  font-family:var(--font-body);
+  font-size:12px;
+}
+
+/* header row */
+.radqy-table thead th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  background:var(--color-psharp);
+  color:#111827;
+  text-align:left;
+  font-weight:600;
+  border-bottom:1px solid var(--color-border);
+  padding:6px 8px;
+  white-space:nowrap;
+}
+
+/* body cells */
+.radqy-table tbody td{
+  padding:4px 8px;
+  border-bottom:1px solid var(--color-border);
+  color:var(--color-text);
+  vertical-align:top;
+  text-align:left;
+  white-space:nowrap;
+}
+
+/* remove any old word-breaking rules */
+.radqy-table td{
+  word-break:normal;
+}
+
+/* 2nd column (Participant … / PID) – cap width + ellipsis */
+.radqy-table th:nth-child(2),
+.radqy-table td:nth-child(2){
+  white-space: nowrap;
+  width: 400px;        /* pick the width you like */
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* make table headers colored by metrics type */
+.radqy-table th.col-aux{background:var(--color-aux);}
+.radqy-table th.col-tag{background:var(--color-tag);}
+.radqy-table th.col-iqm{background:var(--color-iqm);}
+.radqy-table th.col-ext{background:var(--color-ext);}
+
+/* column borders by type */
+.radqy-table th.col-aux,
+.radqy-table td.col-aux { border-left: 1px solid var(--color-aux); border-right: 1px solid var(--color-aux); }
+.radqy-table th.col-tag,
+.radqy-table td.col-tag { border-left: 1px solid var(--color-tag); border-right: 1px solid var(--color-tag); }
+.radqy-table th.col-iqm,
+.radqy-table td.col-iqm { border-left: 1px solid var(--color-iqm); border-right: 1px solid var(--color-iqm); }
+.radqy-table th.col-ext,
+.radqy-table td.col-ext { border-left: 1px solid var(--color-ext); border-right: 1px solid var(--color-ext); }
+
+/*************************************************
+ * ROW COLORS / SELECTION (driven by data-cat)
+ *************************************************/
+
+/* neutral base; real colors come from data-cat */
+.radqy-table tbody tr{
+  background:#ffffff;
+  color:var(--color-text-dark);
+}
+
+.radqy-table tbody tr:hover{
+  background:#f3f4f6;
+}
+
+/* Row colors by category (used by Color by) */
+.radqy-table tbody tr[data-cat="1"]{
+  background: var(--color-base-cat1) !important;
+}
+.radqy-table tbody tr[data-cat="1"]:hover{
+  background: var(--color-hover-cat1) !important;
+}
+
+.radqy-table tbody tr[data-cat="2"]{
+  background: var(--color-base-cat2) !important;
+}
+.radqy-table tbody tr[data-cat="2"]:hover{
+  background: var(--color-hover-cat2) !important;
+}
+
+.radqy-table tbody tr[data-cat="3"]{
+  background: var(--color-base-cat3) !important;
+}
+.radqy-table tbody tr[data-cat="3"]:hover{
+  background: var(--color-hover-cat3) !important;
+}
+
+.radqy-table tbody tr[data-cat="4"]{
+  background: var(--color-base-cat4) !important;
+}
+.radqy-table tbody tr[data-cat="4"]:hover{
+  background: var(--color-hover-cat4) !important;
+}
+
+/* optional – if you ever use more classes */
+.radqy-table tbody tr[data-cat="5"]{
+  background: var(--color-base-cat5) !important;
+}
+.radqy-table tbody tr[data-cat="5"]:hover{
+  background: var(--color-hover-cat5) !important;
+}
+
+.radqy-table tbody tr[data-cat="6"]{
+  background: var(--color-base-cat6) !important;
+}
+.radqy-table tbody tr[data-cat="6"]:hover{
+  background: var(--color-hover-cat6) !important;
+}
+
+/* selected rows per category */
+.radqy-table tbody tr.row-selected[data-cat="1"],
+.radqy-table tbody tr.row-selected[data-cat="1"] td{
+  background:var(--color-select-cat1) !important;
+  color:#ffffff !important;
+}
+
+.radqy-table tbody tr.row-selected[data-cat="2"],
+.radqy-table tbody tr.row-selected[data-cat="2"] td{
+  background:var(--color-select-cat2) !important;
+  color:#ffffff !important;
+}
+
+.radqy-table tbody tr.row-selected[data-cat="3"],
+.radqy-table tbody tr.row-selected[data-cat="3"] td{
+  background:var(--color-select-cat3) !important;
+  color:#ffffff !important;
+}
+
+.radqy-table tbody tr.row-selected[data-cat="4"],
+.radqy-table tbody tr.row-selected[data-cat="4"] td{
+  background:var(--color-select-cat4) !important;
+  color:#ffffff !important;
+}
+
+/* optional extra if you use more categories */
+.radqy-table tbody tr.row-selected[data-cat="5"],
+.radqy-table tbody tr.row-selected[data-cat="5"] td{
+  background:var(--color-select-cat5) !important;
+  color:#ffffff !important;
+}
+
+.radqy-table tbody tr.row-selected[data-cat="6"],
+.radqy-table tbody tr.row-selected[data-cat="6"] td{
+  background:var(--color-select-cat6) !important;
+  color:#ffffff !important;
+}
+
+/* hover sync from other panels — use current Color-by cat */
+.radqy-table tbody tr.row-hover-sync[data-cat="1"],
+.radqy-table tbody tr.row-hover-sync[data-cat="1"] td{
+  background: var(--color-hover-cat1, #e8f0ff) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="2"],
+.radqy-table tbody tr.row-hover-sync[data-cat="2"] td{
+  background: var(--color-hover-cat2, #ffe0f0) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="3"],
+.radqy-table tbody tr.row-hover-sync[data-cat="3"] td{
+  background: var(--color-hover-cat3, #d6fff3) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="4"],
+.radqy-table tbody tr.row-hover-sync[data-cat="4"] td{
+  background: var(--color-hover-cat4, #ffe8cc) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="5"],
+.radqy-table tbody tr.row-hover-sync[data-cat="5"] td{
+  background: var(--color-hover-cat5, #f0e3ff) !important;
+}
+.radqy-table tbody tr.row-hover-sync[data-cat="6"],
+.radqy-table tbody tr.row-hover-sync[data-cat="6"] td{
+  background: var(--color-hover-cat6, #d8f8f6) !important;
+}
+
+/*************************************************
+ * ADD DROPDOWN
+ *************************************************/
+
+.menu-wrap{
+  position:relative;
+  display:inline-block;
+  z-index:2000;
+}
+
+.menu-drop{
+  position:absolute;
+  top:100%;
+  right:0;
+  margin-top:4px;
+  min-width:20px;
+  background:#ffffff;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  box-shadow:0 4px 8px rgba(15,23,42,0.12);
+  padding:4px 0;
+  display:none;
+  z-index:9999 !important; /* bring fully in front */
+}
+
+.menu-drop.is-open{
+  display:block;
+}
+
+.menu-drop .menu-item{
+  width:100%;
+  text-align:left;
+  padding:6px 12px;
+  border:none;
+  font-size:10px;
+  font-family:var(--font-body);
+  cursor:pointer;
+  background: transparent;
+}
+
+/* Hover effect coloring by type */
+.menu-drop .menu-item[data-action="aux"]:hover {
+  background: var(--color-aux);
+}
+
+.menu-drop .menu-item[data-action="ext"]:hover {
+  background: var(--color-ext);
+}
+
+.add-wrap {
+  z-index:3000;
+}
+
+/* ===========================
+ * METRICS DROPDOWN
+ * =========================== */
+
+#sb-metrics-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  border-radius: 6px;
+  padding: 0;                    /* inner sections handle their own padding */
+
+  z-index: 4000;
+  min-width: 100%;
+  max-height: calc(100vh - 160px);
+
+  font-size: 10px;
+  line-height: 1.2;
+
+  display: none;                 /* hidden until .is-open */
+  flex-direction: column;        /* head + scroll body */
+  overflow: hidden;              /* only body scrolls */
+}
+
+#sb-metrics-menu.is-open {
+  display: flex;
+}
+
+/* small colored square for type */
+.metric-color-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+  display: none;
+}
+
+/* color of boxes per type */
+.box-aux { background: var(--color-aux); }
+.box-ext { background: var(--color-ext); }
+.box-tag { background: var(--color-tag); }
+.box-iqm { background: var(--color-iqm); }
+
+/* Top summary rows (AUXs, EXTs, TAGs, IQMs) */
+.metric-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.summary-aux { background: var(--color-aux); }
+.summary-ext { background: var(--color-ext); }
+.summary-tag { background: var(--color-tag); }
+.summary-iqm { background: var(--color-iqm); }
+
+.metric-summary-label {
+  flex: 1;
+}
+
+/* tint checkboxes by type (where supported) */
+.summary-aux input,
+.item-aux input { accent-color: var(--color-aux); }
+
+.summary-ext input,
+.item-ext input { accent-color: var(--color-ext); }
+
+.summary-tag input,
+.item-tag input { accent-color: var(--color-tag); }
+
+.summary-iqm input,
+.item-iqm input { accent-color: var(--color-iqm); }
+
+/* separator between group block and metrics list */
+.metric-separator {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 4px 0;
+}
+
+/* individual metrics list */
+.metric-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.metric-label {
+  flex: 1;
+}
+
+/* hover by type, using your pastel tokens */
+.item-aux:hover { background: var(--color-aux); }
+.item-ext:hover { background: var(--color-ext); }
+.item-tag:hover { background: var(--color-tag); }
+.item-iqm:hover { background: var(--color-iqm); }
+
+/* fixed top area (AUXs / EXTs / TAGs / IQMs + separator) */
+#sb-metrics-menu .metrics-head{
+  flex: 0 0 auto;
+  padding: 6px 10px;
+}
+
+/* scrollable list of individual metrics */
+#sb-metrics-menu .metrics-scroll{
+  flex: 1 1 auto;
+  padding: 4px 10px 6px;
+  overflow-y: auto;
+}

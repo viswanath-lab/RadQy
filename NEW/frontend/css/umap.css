@@ -1,0 +1,369 @@
+#panelumap{
+  display:flex;
+  flex-direction:row;
+  align-items:flex-start;
+  gap:16px;
+  min-height:350px;
+}
+
+/* Toolbar stacking controls and Cohort Finder */
+#panelumap .toolbar{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:14px; /* tighter now that label-by sits on top */
+  margin:0;
+}
+
+.umap-title{
+  margin:6px 0 0 0;
+  font-size:12px;
+  font-weight:600;
+  color:var(--color-emory-blue);
+  width:100%;
+  text-align:center;
+  position:relative;
+  padding-bottom:5px;
+}
+.umap-title::after{
+  content:"";
+  position:absolute;
+  left:0%;
+  right:0%;
+  bottom:0;
+  height:2px;
+  background:var(--color-border);
+}
+
+.umap-form{
+  display:grid;
+  grid-template-columns:auto 105px;
+  row-gap:6px;
+  column-gap:12px;
+  align-items:center;
+  width:max-content;
+  padding:0;
+}
+
+.umap-actions{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:30px; /* spacing from hyperparameter inputs (cohortfinder top)*/
+}
+
+.umap-labelby{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:10px; /* controls spacing above hyperparameter inputs */
+  position:relative; /* anchor dropdown under the button */
+}
+
+#umap-label-menu{
+  min-width: 0;
+  width: auto;
+  background:#ffffff;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  box-shadow:0 4px 8px rgba(15,23,42,0.12);
+  padding:4px 0;
+  z-index:12000;
+  top:100%;
+  left:0;
+}
+#umap-label-menu .menu-item{
+  width:100%;
+  padding:4px 6px;
+  font-size:10px;
+  text-align:left;
+  background:#ffffff;
+  border:none;
+}
+#umap-label-menu .menu-item:hover{
+  background:var(--color-aux, #e5f1ff);
+}
+
+/* Chart-like small controls */
+.ctrlsm{
+  height:var(--btn-h-sm);
+  min-width:56px;
+  padding:0 8px;
+  font-size:10px;
+  color:var(--color-emory-blue);
+  border:1px solid var(--color-emory-blue);
+  border-radius:var(--radius-md);
+  background:#fff;
+  box-shadow:var(--shadow-1);
+}
+.ctrlsm:focus{
+  outline:none;
+  box-shadow:0 0 0 2px rgba(0,47,108,.15);
+}
+
+.umap-form label{
+  font-weight:normal;
+  text-align:right;
+  display:block;
+  width:100%;
+  padding-right:6px;
+  color:var(--color-muted);
+}
+
+.select-wrap{ position:relative; display:inline-block; }
+.select-wrap select.ctrlsm{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  -moz-appearance:none!important;
+  padding-right:22px;
+  background:#fff;
+  color:var(--color-emory-blue);
+  border:1px solid var(--color-emory-blue);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-1);
+}
+.select-wrap.hasmenu::after{
+  content:"";
+  position:absolute;
+  right:10px;
+  top:50%;
+  width:0;
+  height:0;
+  border-left:4px solid transparent;
+  border-right:4px solid transparent;
+  border-top:5px solid var(--color-umap-metric, var(--color-emory-blue));
+  transform:translateY(-35%);
+  pointer-events:none;
+}
+
+/* distanceFn caret uses distinct color */
+.umap-metric-select::after{
+  border-top-color: var(--color-umap-metric, var(--color-emory-blue)) !important;
+}
+
+/* Custom dropdown for distanceFn */
+.umap-metric-dropdown{
+  position:relative;
+  display:inline-block;
+  width:105px;
+}
+.umap-metric-btn{
+  width:100%;
+  text-align:left;
+  padding-right:22px;
+  position:relative;
+}
+.umap-metric-btn.hasmenu::after{
+  content:"";
+  position:absolute;
+  right:8px;
+  top:50%;
+  width:0;
+  height:0;
+  border-left:4px solid transparent;
+  border-right:4px solid transparent;
+  border-top:5px solid var(--color-umap-metric, var(--color-emory-blue));
+  transform:translateY(-35%);
+  pointer-events:none;
+}
+.umap-metric-menu{
+  position:absolute;
+  top:100%;
+  left:0;
+  min-width:100%;
+  background:#ffffff;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  box-shadow:0 4px 8px rgba(15,23,42,0.12);
+  padding:4px 0;
+  z-index:12000;
+  display:none;
+}
+.umap-metric-menu.is-open{
+  display:block;
+}
+.umap-metric-menu .menu-item{
+  width:100%;
+  padding:6px 10px;
+  text-align:left;
+  font-size:10px;
+  background:#ffffff;
+  border:none;
+  color:var(--color-text);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.umap-metric-menu .menu-item:hover,
+.umap-metric-menu .menu-item.is-active{
+  background:var(--color-umap-metric, var(--color-emory-blue));
+  color:#fff;
+}
+
+#panelumap .ctrlsm[type="number"]{
+  height: var(--btn-h-sm);
+  line-height: var(--btn-h-sm);
+  padding-right: 5.75px;
+  /* -moz-appearance: textfield; */
+  box-sizing: border-box;
+}
+#panelumap .ctrlsm[type="number"]::-webkit-inner-spin-button,
+#panelumap .ctrlsm[type="number"]::-webkit-outer-spin-button{
+  -webkit-appearance: inner-spin-button;
+  transform: scale(0.50) translateY(0);
+  transform-origin: center center;
+  margin: 0;
+  opacity: .0;
+  transition: opacity .15s ease;
+}
+#panelumap .ctrlsm[type="number"]:focus::-webkit-inner-spin-button,
+#panelumap .ctrlsm[type="number"]:focus::-webkit-outer-spin-button{
+  opacity: .6;
+}
+/* #panelumap .ctrlsm[type="number"] { -moz-appearance: textfield; }
+#panelumap .ctrlsm[type="number"]:focus { -moz-appearance: number-input; } */
+
+#umap-plotwrap{
+  flex:1 1 auto;
+  display:flex;
+  gap:1px;
+  align-items:stretch;
+}
+#umaphost{
+  flex:1 1 auto;
+  min-height:260px;
+  height: 350px;
+  border:1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow:var(--shadow-1);
+  overflow:hidden;
+  position:relative;
+}
+#umaphost canvas{
+  overflow:hidden !important;
+}
+.umap-placeholder{
+  padding:12px;
+  color:#6b7280;
+  font-size:13px;
+}
+
+/* Dedicated rail for the Plotly modebar, to the right of the plot */
+#umap-modebar-rail{
+  flex:0 0 30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#f8fafc;
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-1);
+  padding:8px 0;
+  min-height:260px;
+}
+
+#umap-modebar-rail .modebar-container{
+  position:static !important;
+  inset:auto !important;
+  transform:none !important;
+  width:auto !important;
+  height:auto !important;
+  pointer-events:auto !important;
+}
+#umap-modebar-rail .modebar{
+  position:static !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  gap:8px !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+#umap-modebar-rail .modebar-group{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:8px !important;
+  width:100%;
+  justify-content:center;
+}
+#umap-modebar-rail .modebar-btn{
+  margin:0 !important;
+}
+
+.label-dialog-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--color-emory-blue);
+  margin-bottom:10px;
+}
+.label-dialog-form{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.label-dialog-form label{
+  font-size:11px;
+  color:var(--color-text);
+}
+.label-dialog-form input{
+  height:28px;
+  padding:4px 8px;
+  border:1px solid var(--color-border);
+  border-radius:6px;
+  font-size:12px;
+}
+.label-dialog-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+.label-dialog-actions .btn{
+  position:static;
+  top:auto;
+  right:auto;
+  margin:0;
+  min-width:64px;
+}
+#label-dialog-overlay{
+  position:fixed;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.25);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:15000;
+}
+#label-dialog{
+  background:#fff;
+  border:1px solid var(--color-border);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
+  padding:16px;
+  min-width:260px;
+}
+
+/* Reuse styles for cohort dialog */
+#cohort-dialog-overlay{
+  position:fixed;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.25);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:15000;
+}
+#cohort-dialog{
+  background:#fff;
+  border:1px solid var(--color-border);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
+  padding:16px;
+  min-width:260px;
+}

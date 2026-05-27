@@ -1,0 +1,106 @@
+/* right-side Color by panel */
+#panelcolor{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 12px;
+}
+
+#panelcolor .chart-color-group{
+  display: flex;
+  align-items: center;
+  gap: 6px;              /* distance between label and button */
+}
+
+#panelcolor .ctl-label{
+  font-size: 10px;
+}
+
+#chartColor{
+  min-width: 104px;
+  max-width: 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 10px;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+
+
+/* ========================================================= */
+/* Half-page (Report split) – keep Color by small and inside */
+/* ========================================================= */
+
+/* make the opt+legend row behave nicely in the narrower view */
+body.layout-report-split .panelrow-two {
+  display: flex;
+  gap: 8px;
+}
+
+/* legend strip stays on the left of that row */
+body.layout-report-split #panellegend {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 12px;
+}
+
+/* Color-by mini panel on the far right, smaller */
+body.layout-report-split #panellegend .chart-color-group {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  padding: 2px 6px;      /* tighter padding */
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* ============================
+ * Color-by dropdown popup box
+ * ============================ */
+
+/* The floating dropdown panel */
+#color-menu {
+  position: absolute;
+  left: 0;
+  right: auto;
+  top: 100%;
+  width: auto;
+  min-width: 0;
+  padding-right: 0;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(15,23,42,0.12);
+  box-sizing: border-box;
+}
+
+/* Each item row inside the Color by menu */
+#color-menu .menu-item {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px; /* modest padding */
+  font-size: 10px;
+  white-space: nowrap;
+  background: #ffffff;      /* no !important */
+  border: none;
+}
+
+/* thin separators between items (optional) */
+/*#color-menu .menu-item + .menu-item {
+  border-top: 1px solid #f3f4f6;
+}*/
+
+/* hover style per type – same as Metrics */
+#color-menu .item-aux:hover  { background: var(--color-aux) !important; }
+#color-menu .item-ext:hover  { background: var(--color-ext) !important; }
+#color-menu .item-tag:hover  { background: var(--color-tag) !important; }
+#color-menu .item-iqm:hover  { background: var(--color-iqm) !important; }
+
+/* hover for the P# item in Color by */
+#color-menu .item-pid:hover{
+  background: var(--color-psharp);
+}

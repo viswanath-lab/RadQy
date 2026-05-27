@@ -1,0 +1,136 @@
+/* =========================================
+ * OPT PANEL INLINE CONTROLS
+ * ========================================= */
+
+/* Panel padding */
+#panelopt{
+  padding: 0 12px;
+  display: flex;          /* make the panel a flex container */
+  align-items: center;    /* center toolbar vertically */
+}
+
+/* Toolbar must be flex so the input can grow */
+#panelopt .toolbar{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  width: 100%;            /* ensure toolbar spans full panel width */
+}
+
+/* Apply button (fixed) */
+#panelopt .btnsm{
+  height: var(--btn-h-sm);
+  line-height: var(--btn-h-sm);
+  padding: 0 8px;
+  min-width: 40px;
+  font-size: 11px;
+  box-sizing: border-box;
+  border-width: 1px;
+  flex: 0 0 auto;
+}
+
+/* Custom Selection input (single authoritative block) */
+#panelopt .optinput{
+  /* sizing and layout */
+  height: var(--btn-h-sm);
+  line-height: var(--btn-h-sm);
+  flex: 1 1 auto;      /* fill remaining space */
+  min-width: 0;        /* allow shrinking */
+  width: 100%;
+
+  /* typography */
+  font-size: 12px;     /* smaller to fit long expressions */
+  color: var(--color-text);
+
+  /* visuals */
+  padding: 0 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+
+  /* avoid wrap; allow horizontal scroll if needed */
+  white-space: nowrap;
+  overflow-x: auto;
+
+  /* normalize native appearance */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Placeholder look */
+#panelopt .optinput::placeholder{
+  color: var(--color-muted);
+  font-style: italic;
+  font-size: 10px;     /* make placeholder itself small */
+  opacity: 1;
+}
+
+/* When report split is on, shrink just a bit more */
+body.layout-report-split #panelopt .optinput{
+  font-size: 9px;
+}
+body.layout-report-split #panelopt .optinput::placeholder{
+  font-size: 9px;
+}
+
+/* =========================================
+ * TOP-LEVEL OPT BANNER (SAME POSITION AS REPORT)
+ * ========================================= */
+
+/* This banner lives outside the panels (same DOM level as report banner).
+   It reuses the same fixed position and pill style as #report-open-banner. */
+#opt-open-banner{
+  position: fixed;
+  left: 50%;
+  top: 92px;                                   /* just under the header divider */
+  transform: translateX(-41%);
+  z-index: 9999;
+
+  background: #ffffff;
+  border: 2px solid var(--color-emory-blue);   /* same border as report banner */
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: var(--shadow-1);
+
+  font-size: 13px;
+  color: var(--color-text);
+
+  display: none;                               /* hidden until OPT shows it */
+  align-items: center;
+  gap: 8px;
+}
+
+#opt-open-text{
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+#opt-open-banner button{
+  font-size: 12px;
+  padding: 3px 16px;
+}
+
+/* Reuse the same rqy-shake animation that report.css already defines */
+#opt-open-banner.shake{
+  animation: rqy-shake 0.3s ease;
+}
+
+/* =========================================
+ * OVERLAY TO BLOCK UI WHILE OPT MESSAGE IS VISIBLE
+ * ========================================= */
+
+/* Full-page click blocker for OPT message.
+   Header (z-index:10) stays above this so Reset always works. */
+#opt-blocker{
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  background: transparent;
+  z-index: 5;          /* lower than header (10), higher than main content */
+  display: none;
+}
