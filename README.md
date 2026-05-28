@@ -46,7 +46,7 @@ RadQy/
 ├── README.md
 ├── requirements.txt
 └── pyproject.toml
-
+```
 
 ## Installation
 
