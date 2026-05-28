@@ -4,7 +4,9 @@
 
 ## RadQy
 
-RadQy is a quality assurance and evaluation platform for MRI and CT imaging datasets. It extracts DICOM metadata, computes image quality metrics, generates scan thumbnails, supports foreground/background mask generation, and provides an interactive front-end interface for visual quality review, cohort exploration, and reporting.
+RadQy is a quality assurance and evaluation platform for MRI and CT imaging datasets. It extracts metadata, computes image quality metrics, generates scan thumbnails, supports foreground/background mask generation, and provides an interactive front-end interface for visual quality review, cohort exploration, and LLM-assisted reporting and dataset interpretation.
+
+
 
 ## RadQy Demo
 
