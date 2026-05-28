@@ -36,6 +36,7 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 ## Repository Structure
 
+```text
 RadQy/
 ├── backend/          # Processing, IQM, segmentation, and CLI logic
 ├── frontend/         # Web-based RadQy interface
