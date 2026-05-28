@@ -1,4 +1,4 @@
-<img width="1918" height="820" alt="radqy" src="https://github.com/user-attachments/assets/98bb587b-2c54-4d56-a240-3e4665674d2f" />
+<img width="1918" height="620" alt="radqy" src="https://github.com/user-attachments/assets/98bb587b-2c54-4d56-a240-3e4665674d2f" />
 
 
 
