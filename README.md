@@ -10,8 +10,6 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 
 ## Front-end View
-![gbm_mrqy](https://user-images.githubusercontent.com/50635618/77496601-b6519f00-6e21-11ea-8f52-16f33d4c66cc.gif)
-
 <img width="800" height="430" alt="Image" src="https://github.com/user-attachments/assets/051b0709-d9ec-495f-8212-3eabc72ecc0c" />
 
 
