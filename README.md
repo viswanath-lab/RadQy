@@ -14,8 +14,7 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 
 ## Backend View
-![gbm_mrqy](https://user-images.githubusercontent.com/50635618/77506445-43095680-6e3c-11ea-9376-7be6f7cdc5d8.gif)
- 
+<img width="850" height="457" alt="Image" src="https://github.com/user-attachments/assets/6961101c-5f46-4456-8310-5506bbec1c93" />
 
 
 # Table of Contents
