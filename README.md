@@ -22,12 +22,9 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 
 
-# Table of Contents
-
-
-````markdown
 ## Key Features
 
+````markdown
 - MRI and CT quality assessment
 - DICOM metadata/tag extraction
 - Image quality metric computation
