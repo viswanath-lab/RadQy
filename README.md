@@ -3,10 +3,10 @@
 </p>
 
 
+## RadQy Demo
 
-
-https://github.com/user-attachments/assets/7bbe93b7-19b1-4146-b0ca-5e529445839c
-
+Full demo video:
+https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 
 ## Front-end View
