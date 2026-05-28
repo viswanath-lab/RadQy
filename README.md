@@ -24,7 +24,6 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 ## Key Features
 
-````markdown
 - MRI and CT quality assessment
 - DICOM metadata/tag extraction
 - Image quality metric computation
@@ -37,7 +36,6 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 ## Repository Structure
 
-```text
 RadQy/
 ├── backend/          # Processing, IQM, segmentation, and CLI logic
 ├── frontend/         # Web-based RadQy interface
@@ -47,7 +45,7 @@ RadQy/
 ├── README.md
 ├── requirements.txt
 └── pyproject.toml
-````
+
 
 ## Installation
 
