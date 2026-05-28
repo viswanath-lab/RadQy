@@ -10,11 +10,13 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 
 
 ## Front-end View
-<img width="800" height="430" alt="Image" src="https://github.com/user-attachments/assets/051b0709-d9ec-495f-8212-3eabc72ecc0c" />
+<img width="800" height="430" alt="radqy_readme_fastx15" src="https://github.com/user-attachments/assets/b6b9fecc-832f-4700-84b1-24a907d9ff20" />
+
 
 
 ## Backend View
-<img width="850" height="457" alt="Image" src="https://github.com/user-attachments/assets/6961101c-5f46-4456-8310-5506bbec1c93" />
+<img width="850" height="457" alt="radqy_readme_1to38_10x" src="https://github.com/user-attachments/assets/152188de-9e67-42c5-b799-07d8abab9271" />
+
 
 
 # Table of Contents
