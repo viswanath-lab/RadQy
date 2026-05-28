@@ -2,6 +2,9 @@
   <img src="https://github.com/user-attachments/assets/98bb587b-2c54-4d56-a240-3e4665674d2f" width="900"/>
 </p>
 
+## RadQy
+
+RadQy is a quality assurance and evaluation platform for MRI and CT imaging datasets. It extracts DICOM metadata, computes image quality metrics, generates scan thumbnails, supports foreground/background mask generation, and provides an interactive front-end interface for visual quality review, cohort exploration, and reporting.
 
 ## RadQy Demo
 
@@ -22,151 +25,121 @@ https://youtu.be/pzJUZovFlT0?si=PcMnU4Dhdkh_qTX8
 # Table of Contents
 
 
+````markdown
+## Key Features
 
+- MRI and CT quality assessment
+- DICOM metadata/tag extraction
+- Image quality metric computation
+- Thumbnail generation for participant-level review
+- Optional foreground/background mask export
+- Interactive front-end visualization
+- Parallel coordinate plots for quality metric exploration
+- Subject/table filtering and cohort review
+- Support for multiple segmentation options including `otsuhull`, `adaptiveborder`, and `unet`
 
+## Repository Structure
 
-
-## Description
-
-
-This tool takes **MRI** or **CT** datasets in the file formats as the input. \
-A CLI command is used to generate several tags and noise/information measurements for quality assessment. These scripts save the calculated measures in a  _.tsv_ file as well as generate _.png_ thumbnails for all images in a subject volume. These are then fed to _.js_ scripts to create the user interface (_index.html_) output. A schematic illustrating the framework of the tool is as follows.
-
-
-
-![Picture1](https://user-images.githubusercontent.com/50635618/76675455-07df6b80-6590-11ea-85f7-13b71a9a1ec3.png)
-
-
-
+```text
+RadQy/
+├── backend/          # Processing, IQM, segmentation, and CLI logic
+├── frontend/         # Web-based RadQy interface
+├── docs/             # Documentation and figures
+├── tests/            # Test files
+├── tools/            # Utility scripts
+├── README.md
+├── requirements.txt
+└── pyproject.toml
+````
 
 ## Installation
 
-RadQy can be installed via `pip` or `conda`.
-
-### Using pip
+Clone the repository:
 
 ```bash
-pip install radqy
+git clone https://github.com/viswanath-lab/RadQy.git
+cd RadQy
 ```
 
-### Using conda
+Create an environment:
 
 ```bash
 conda create -n radqy python=3.10
 conda activate radqy
-pip install radqy
 ```
 
-## Running
-
-Display the help message:
-  
-```bash
-radqy --help
-```
-Expected Output:
-
-```
-usage: radqy [-h] [--ui-download] [--ui-run] [-s S] [-b B] [-u U] [-t {MRI,CT}]
-             output_folder_name inputdir [inputdir ...]
-
-positional arguments:
-  output_folder_name    The subfolder name in the '...\UserInterface\Data\output_folder_name' directory.
-  inputdir              Input folder(s) containing *.dcm, *.mha, *.nii, or *.mat files.
-                        Example: 'E:\Data\Rectal\input_data_folder'
-
-optional arguments:
-  -h, --help            Show this help message and exit
-  --ui-download         Download the UserInterface.zip file
-  --ui-run              Run the User Interface
-  -s S                  Save foreground masks (default: False)
-  -b B                  Number of samples (default: 1)
-  -u U                  Percent of middle images to process (default: 100)
-  -t {MRI,CT}           Type of scan (MRI or CT) 
-```
-
-
-
-### Running the Quality Control Script
-
-Run the **radqy** command using the following syntax:
+Install requirements:
 
 ```bash
-radqy output_folder_name "input_directory" [options]
+pip install -r requirements.txt
 ```
 
-Example:
+## Running RadQy
+
+Basic command:
 
 ```bash
-radqy output_results "E:\Data\Rectal\input_data_folder" -s True -b 5 -u 50 -t CT
+python backend/main.py --inputdir "PATH_TO_DICOM_DATASET" --scantype mri
 ```
 
-Arguments:
-
-- **output_folder_name (required)**: The subfolder name in the `...\UserInterface\Data\output_folder_name` directory.
-- **input_directory (required)**: Path to the input directory containing image files.
-
-Options:
-
-- **-s**: Save foreground masks (`True` or `False`). Default is `False`.
-- **-b**: Number of samples. Default is `1`.
-- **-u**: Percent of middle images to process. Default is `100`.
-- **-t** (required): Type of scan (`MRI` or `CT`). 
-
-Notes:
-
-- There is no need to manually create a subfolder in the Data directory; specifying its name in the command is sufficient.
-- All actions will be printed in the output console for transparency.
-- Thumbnail images in .png format will be saved in `...\UserInterface\Data\output_folder_name`, with each original filename as a subfolder name.
-
-### Running the User Interface
-
-#### Download the User Interface
-
-To download the User Interface, run the following command:
+For CT data:
 
 ```bash
-radqy --ui-download
+python backend/main.py --inputdir "PATH_TO_DICOM_DATASET" --scantype ct
 ```
 
-This command will download and unzip the User Interface into the appropriate directory.
+Example with options:
 
-
-#### Run the User Interface
-To run the User Interface, execute:
-  
 ```bash
-radqy --ui-run
+python backend/main.py ^
+  --inputdir "E:\Data\Rectal\input_data_folder" ^
+  --scantype mri ^
+  --middle-percent 50 ^
+  --num-samples 2 ^
+  --save-fgbg ^
+  --segmenter otsuhull
 ```
 
-If the User Interface is not already downloaded, this command will download it automatically before launching.
+## Main Options
 
-#### Accessing the Front-End Interface Manually
-If you prefer to access the User Interface without using the **--ui-run** command:
+```text
+--inputdir          Root folder containing participant DICOM files
+--scantype          Scan type: mri or ct
+--middle-percent    Percent of middle slices to process
+--num-samples       Slice sampling stride
+--save-fgbg         Save foreground/background masks
+--segmenter         Segmentation method: adaptiveborder, otsuhull, regiongrowing, unet, fcn, mobilenet
+--verbose           Print detailed per-file processing progress
+```
 
-1. Open the Interface:
-Navigate to the UserInterface directory (e.g., `C:\Users\YourUserName\.radqy\UserInterface`).
-Double-click on `index.html` to open the front-end user interface.
+## Output
 
-2. Load Results:
+RadQy creates an output folder under:
 
-In the interface, select the appropriate **results.tsv** file from the `...\UserInterface\Data\output_folder_name directory`.
+```text
+frontend/Data/<dataset_name>/
+```
+
+The main output file is:
+
+```text
+results.tsv
+```
+
+The output includes:
+
+* participant-level metadata
+* number of slices
+* extracted DICOM tags
+* image quality metrics
+* thumbnail image filenames
+* optional foreground/background mask outputs
+
+## Front-End Interface
+
+After generating `results.tsv`, open the RadQy front-end from the `frontend` folder and load the generated dataset output.
 
 
-### Measurements
-
-The measures of the MRQy tool are listed in the following table.
-
-![Picture1](https://user-images.githubusercontent.com/50635618/76733243-cb9a3f80-6736-11ea-8100-a1bdb6f60d3f.png)
-
-
-### User Interface
-
-The following figures show the user interface of the tool (index.html). 
-
-![C1](https://user-images.githubusercontent.com/50635618/78467306-3ce76580-76d9-11ea-8dbd-d43f82cd29a6.PNG)
-![C2](https://user-images.githubusercontent.com/50635618/78467302-3bb63880-76d9-11ea-84ff-ce44f5f8a822.PNG)
-![C3](https://user-images.githubusercontent.com/50635618/78467305-3ce76580-76d9-11ea-96a8-7574042c14c6.PNG)
 
 ## Feedback and usage
 
