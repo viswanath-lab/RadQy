@@ -8,14 +8,42 @@
     retryAfterTs: 0,
     generating: false,
     lastReport: "",
-    reportVisible: false
+    reportVisible: false,
+    reportType: "mri"
   };
 
-  const QC_SYSTEM_PROMPT = `You are an expert medical imaging quality control analyst and scientific report writer with deep knowledge of MRI QC, image quality metrics (IQMs), and unsupervised data analysis. Your task is to generate a comprehensive, professional AI-based QC report using outputs from RadQy. The report should be suitable for researchers, clinicians, and data managers evaluating MRI datasets for reliability, harmonization, and downstream AI training. Follow the required sections and tone: Dataset Overview; IQM Distribution Analysis; Outlier Detection and Severity Ranking; Clustering and Data Structure Analysis; Inter-Cluster Comparison; Cohort and Dataset Comparisons; Visualization-Aware Interpretation; Actionable Recommendations. Keep it concise, evidence-based, and ready to paste into documentation.`;
+  const QC_SYSTEM_PROMPT_MRI = `You are an expert medical imaging quality control analyst and scientific report writer with deep knowledge of MRI QC, image quality metrics (IQMs), and unsupervised data analysis. Your task is to generate a comprehensive, professional AI-based QC report using outputs from RadQy. The report should be suitable for researchers, clinicians, and data managers evaluating MRI datasets for reliability, harmonization, and downstream AI training. Follow the required sections and tone: Dataset Overview; IQM Distribution Analysis; Outlier Detection and Severity Ranking; Clustering and Data Structure Analysis; Inter-Cluster Comparison; Cohort and Dataset Comparisons; Visualization-Aware Interpretation; Actionable Recommendations. Keep it concise, evidence-based, and ready to paste into documentation.`;
 
-  const QC_USER_INSTRUCTIONS = `Generate the final QC report. Use ONLY the dataset context provided below; do not invent data you don't see. If certain analyses (e.g., clustering, inter-cluster, cohort/dataset comparisons, visualization) are absent, explicitly note the gap AND add a polite, actionable suggestion tagged with "Suggestion:" that tells the user which RadQy module to run (e.g., clustering, Cohort Finder, visualization) to populate that section. Keep the section concise and never fabricate numbers. Write in polished, scientific prose with clear headings and bullet points where appropriate. Avoid speculative claims.`;
+  const QC_SYSTEM_PROMPT_CT = `You are an expert medical imaging quality control analyst and scientific report writer with deep knowledge of CT QC, image quality metrics (IQMs), and unsupervised data analysis. Your task is to generate a comprehensive, professional AI-based QC report using outputs from RadQy. The report should be suitable for researchers, clinicians, and data managers evaluating CT datasets for reliability, harmonization, and downstream AI training. Follow the required sections and tone: Dataset Overview; IQM Distribution Analysis; Outlier Detection and Severity Ranking; Clustering and Data Structure Analysis; Inter-Cluster Comparison; Cohort and Dataset Comparisons; Visualization-Aware Interpretation; Actionable Recommendations. Keep it concise, evidence-based, and ready to paste into documentation.`;
 
-  const QC_CHAT_SYSTEM_PROMPT = `You are the RadQy QC assistant. Always answer using the current QC dataset context and QC report provided. Use supplied metric counts, summary stats, max/min (extremes), and unique-value frequency summaries to answer questions (including “highest”, “lowest”, “how many classes/categories”, or “most common”). If a requested metric/field is missing from the dataset, say it is not available. Do not invent numbers. Keep answers concise and practical.`;
+  const QC_USER_INSTRUCTIONS_MRI = `Generate the final QC report. Use ONLY the dataset context provided below; do not invent data you don't see. If certain analyses (e.g., clustering, inter-cluster, cohort/dataset comparisons, visualization) are absent, explicitly note the gap AND add a polite, actionable suggestion tagged with "Suggestion:" that tells the user which RadQy module to run (e.g., clustering, Cohort Finder, visualization) to populate that section. Keep the section concise and never fabricate numbers. Write in polished, scientific prose with clear headings and bullet points where appropriate. Avoid speculative claims.`;
+
+  const QC_USER_INSTRUCTIONS_CT = `Generate the final QC report. Use ONLY the dataset context provided below; do not invent data you don't see. If certain analyses (e.g., clustering, inter-cluster, cohort/dataset comparisons, visualization) are absent, explicitly note the gap AND add a polite, actionable suggestion tagged with "Suggestion:" that tells the user which RadQy module to run (e.g., clustering, Cohort Finder, visualization) to populate that section. Keep the section concise and never fabricate numbers. Write in polished, scientific prose with clear headings and bullet points where appropriate. Avoid speculative claims.`;
+
+  const QC_CHAT_SYSTEM_PROMPT_MRI = `You are the RadQy QC assistant. Always answer using the current QC dataset context and QC report provided. Use supplied metric counts, summary stats, max/min (extremes), and unique-value frequency summaries to answer questions (including “highest”, “lowest”, “how many classes/categories”, or “most common”). If a requested metric/field is missing from the dataset, say it is not available. Do not invent numbers. Keep answers concise and practical.`;
+
+  const QC_CHAT_SYSTEM_PROMPT_CT = `You are the RadQy QC assistant. Always answer using the current QC dataset context and QC report provided. Use supplied metric counts, summary stats, max/min (extremes), and unique-value frequency summaries to answer questions (including "highest", "lowest", "how many classes/categories", or "most common"). If a requested metric/field is missing from the dataset, say it is not available. Do not invent numbers. Keep answers concise and practical.`;
+
+  function getDatasetScanType(){
+    const s = String(window.DATA?.META?.scantype || "").trim().toLowerCase();
+    return s === "ct" ? "ct" : "mri";
+  }
+
+  function getPromptSet(){
+    const type = String(STATE.reportType || getDatasetScanType()).toLowerCase();
+    if (type === "ct") {
+      return {
+        system: QC_SYSTEM_PROMPT_CT,
+        userInstructions: QC_USER_INSTRUCTIONS_CT,
+        chatSystem: QC_CHAT_SYSTEM_PROMPT_CT
+      };
+    }
+    return {
+      system: QC_SYSTEM_PROMPT_MRI,
+      userInstructions: QC_USER_INSTRUCTIONS_MRI,
+      chatSystem: QC_CHAT_SYSTEM_PROMPT_MRI
+    };
+  }
 
   const enc = new TextEncoder();
   const dec = new TextDecoder();
@@ -103,8 +131,387 @@
       .report-content strong { font-weight: 700; }
       .report-content .qc-suggestion { color: #b25c00; font-weight: 600; }
       .report-content .qc-suggestion strong { color: #b25c00; }
+      .report-participant-link {
+        border: 0;
+        background: transparent;
+        color: #1f5aa6;
+        text-decoration: underline;
+        cursor: pointer;
+        font: inherit;
+        padding: 0;
+      }
+      .participant-detail-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+      .participant-detail-overlay.is-open {
+        display: flex;
+      }
+      .participant-detail-modal {
+        width: min(920px, calc(100vw - 40px));
+        max-height: calc(100vh - 60px);
+        overflow: auto;
+        background: #fff;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      }
+      .participant-detail-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .participant-detail-title {
+        margin: 0;
+        font-size: 18px;
+      }
+      .participant-detail-close {
+        border: 0;
+        background: #f2f2f2;
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 6px 10px;
+      }
+      .participant-detail-section {
+        margin-top: 12px;
+      }
+      .participant-detail-section h3 {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+      .participant-detail-kv {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px;
+      }
+      .participant-detail-kv .item {
+        border: 1px solid #e6e6e6;
+        border-radius: 6px;
+        padding: 8px;
+        font-size: 12px;
+      }
+      .participant-detail-kv .k {
+        color: #666;
+        display: block;
+      }
+      .participant-detail-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .participant-detail-table th,
+      .participant-detail-table td {
+        border: 1px solid #e8e8e8;
+        padding: 6px;
+        text-align: left;
+      }
+      .participant-detail-list {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 12px;
+      }
     `;
     document.head.appendChild(style);
+  }
+
+  function normalizeParticipantId(text){
+    const raw = String(text || "").trim();
+    if (!raw) return null;
+    let m = raw.match(/^P(\d+)$/i);
+    if (m) return "P" + String(Number(m[1]));
+    m = raw.match(/^(?:participant|case|subject)\s+P?(\d+)$/i);
+    if (m) return "P" + String(Number(m[1]));
+    return null;
+  }
+
+  function formatMaybe(v){
+    if (v === null || v === undefined) return "Not available";
+    const s = String(v).trim();
+    return s ? s : "Not available";
+  }
+
+  function escapeHTML(s){
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function toNum(v){
+    if (v === null || v === undefined) return null;
+    const n = Number(String(v).replace(/,/g, "").trim());
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function median(vals){
+    if (!vals.length) return null;
+    const a = vals.slice().sort((x,y)=>x-y);
+    const mid = Math.floor(a.length / 2);
+    if (a.length % 2) return a[mid];
+    return (a[mid - 1] + a[mid]) / 2;
+  }
+
+  function findParticipantRow(participantId){
+    const headers = Array.isArray(window.DATA?.HEADERS) ? window.DATA.HEADERS : [];
+    const rows = Array.isArray(window.DATA?.ROWS) ? window.DATA.ROWS : [];
+    if (!headers.length || !rows.length) return { index: -1, row: null, headers };
+
+    const pHeader = headers.find(h => String(h).toLowerCase() === "p#");
+    if (pHeader) {
+      for (let i = 0; i < rows.length; i++) {
+        const pid = normalizeParticipantId(rows[i][pHeader]);
+        if (pid === participantId) return { index: i, row: rows[i], headers };
+      }
+    }
+    return { index: -1, row: null, headers };
+  }
+
+  function buildCohortStats(headers, rows, metricHeaders){
+    const stats = {};
+    metricHeaders.forEach(h => {
+      const vals = rows.map(r => toNum(r[h])).filter(v => v !== null);
+      if (!vals.length) {
+        stats[h] = { mean: null, median: null, sd: null };
+        return;
+      }
+      const mean = vals.reduce((a,b)=>a+b,0) / vals.length;
+      const med = median(vals);
+      let sd = null;
+      if (vals.length > 1) {
+        const variance = vals.reduce((s,v)=>s + Math.pow(v - mean, 2), 0) / vals.length;
+        sd = Math.sqrt(variance);
+      }
+      stats[h] = { mean, median: med, sd };
+    });
+    return stats;
+  }
+
+  function getMetricHeaders(headers, rows){
+    const iqms = Array.isArray(window.DATA?.META?.iqms) ? window.DATA.META.iqms : [];
+    const hasNumeric = (h) => rows.some(r => toNum(r[h]) !== null);
+    if (iqms.length) {
+      const set = new Set(iqms.map(x => String(x).toLowerCase()));
+      return headers.filter(h => set.has(String(h).toLowerCase()) && hasNumeric(h));
+    }
+    const metaExclude = new Set([
+      "p#", "participant (topfolder--subfolder--patient id)", "images",
+      "mfr", "b0", "tr", "te", "nsl", "row", "col", "vrx", "vry", "vrz"
+    ]);
+    return headers.filter(h => !metaExclude.has(String(h).toLowerCase()) && hasNumeric(h));
+  }
+
+  function metricRowsForParticipant(row, headers, rows){
+    const metricHeaders = getMetricHeaders(headers, rows);
+    const stats = buildCohortStats(headers, rows, metricHeaders);
+    const out = metricHeaders.map(h => {
+      const value = toNum(row[h]);
+      const mean = stats[h].mean;
+      const med = stats[h].median;
+      const sd = stats[h].sd;
+      let z = null;
+      if (value !== null && mean !== null && sd !== null && sd > 0) {
+        z = (value - mean) / sd;
+      }
+      const diffMedian = (value !== null && med !== null) ? (value - med) : null;
+      const diffMean = (value !== null && mean !== null) ? (value - mean) : null;
+      const score = z !== null ? Math.abs(z)
+        : (diffMedian !== null ? Math.abs(diffMedian)
+        : (diffMean !== null ? Math.abs(diffMean) : -1));
+      return {
+        metric: h,
+        value,
+        z,
+        median: med,
+        mean,
+        diffMedian,
+        diffMean,
+        score
+      };
+    });
+    out.sort((a,b) => b.score - a.score);
+    return out;
+  }
+
+  function renderMetricTable(rowsData){
+    if (!rowsData.length) return '<p>Not available</p>';
+    const rowsHtml = rowsData.map(r => `
+      <tr>
+        <td>${escapeHTML(r.metric)}</td>
+        <td>${formatMaybe(r.value !== null ? round(r.value, 3) : null)}</td>
+        <td>${formatMaybe(r.z !== null ? round(r.z, 3) : null)}</td>
+        <td>${formatMaybe(r.median !== null ? round(r.median, 3) : null)}</td>
+        <td>${formatMaybe(r.mean !== null ? round(r.mean, 3) : null)}</td>
+        <td>${formatMaybe(r.diffMedian !== null ? round(r.diffMedian, 3) : null)}</td>
+      </tr>
+    `).join("");
+    return `
+      <table class="participant-detail-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>z-score</th>
+            <th>Cohort Median</th>
+            <th>Cohort Mean</th>
+            <th>Diff from Median</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
+  }
+
+  function ensureParticipantDetailOverlay(){
+    let overlay = document.getElementById("participant-detail-overlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "participant-detail-overlay";
+    overlay.className = "participant-detail-overlay";
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.classList.remove("is-open");
+    });
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function openParticipantDetail(participantId){
+    const normalized = normalizeParticipantId(participantId);
+    const overlay = ensureParticipantDetailOverlay();
+    if (!normalized) {
+      overlay.innerHTML = `
+        <div class="participant-detail-modal">
+          <div class="participant-detail-head">
+            <h2 class="participant-detail-title">Participant not found</h2>
+            <button type="button" class="participant-detail-close">Close</button>
+          </div>
+          <p>Participant not found.</p>
+        </div>`;
+      overlay.querySelector(".participant-detail-close").addEventListener("click", () => overlay.classList.remove("is-open"));
+      overlay.classList.add("is-open");
+      return;
+    }
+
+    const rows = Array.isArray(window.DATA?.ROWS) ? window.DATA.ROWS : [];
+    const imagesByRow = Array.isArray(window.DATA?.IMAGES) ? window.DATA.IMAGES : [];
+    const found = findParticipantRow(normalized);
+    if (!found.row) {
+      overlay.innerHTML = `
+        <div class="participant-detail-modal">
+          <div class="participant-detail-head">
+            <h2 class="participant-detail-title">${escapeHTML(normalized)}</h2>
+            <button type="button" class="participant-detail-close">Close</button>
+          </div>
+          <p>Participant not found.</p>
+        </div>`;
+      overlay.querySelector(".participant-detail-close").addEventListener("click", () => overlay.classList.remove("is-open"));
+      overlay.classList.add("is-open");
+      return;
+    }
+
+    const row = found.row;
+    const headers = found.headers;
+    const metrics = metricRowsForParticipant(row, headers, rows);
+    const topMetrics = metrics.slice(0, 8);
+    const compareRows = metrics.slice(0, 10);
+    const metadataKeys = ["MFR", "B0", "TR", "TE", "NSL", "ROW", "COL", "VRX", "VRY", "VRZ"];
+
+    const metadataMap = {};
+    metadataKeys.forEach(k => {
+      const h = headers.find(x => String(x).toLowerCase() === k.toLowerCase());
+      metadataMap[k] = h ? formatMaybe(row[h]) : "Not available";
+    });
+
+    overlay.innerHTML = `
+      <div class="participant-detail-modal">
+        <div class="participant-detail-head">
+          <h2 class="participant-detail-title">Participant Detail: ${escapeHTML(normalized)}</h2>
+          <button type="button" class="participant-detail-close">Close</button>
+        </div>
+
+        <section class="participant-detail-section">
+          <h3>Participant Overview</h3>
+          <div class="participant-detail-kv">
+            <div class="item"><span class="k">Participant ID</span>${escapeHTML(normalized)}</div>
+            <div class="item"><span class="k">Dataset row</span>${formatMaybe(found.index + 1)}</div>
+          </div>
+        </section>
+
+        <section class="participant-detail-section">
+          <h3>Acquisition Metadata</h3>
+          <div class="participant-detail-kv">
+            ${metadataKeys.map(k => `<div class="item"><span class="k">${k}</span>${escapeHTML(String(metadataMap[k]))}</div>`).join("")}
+          </div>
+        </section>
+
+        <section class="participant-detail-section">
+          <h3>Highest / Most Abnormal Metrics</h3>
+          ${renderMetricTable(topMetrics)}
+        </section>
+
+        <section class="participant-detail-section">
+          <h3>Compare to Cohort Median</h3>
+          ${renderMetricTable(compareRows)}
+        </section>
+      </div>`;
+
+    overlay.querySelector(".participant-detail-close").addEventListener("click", () => overlay.classList.remove("is-open"));
+    overlay.classList.add("is-open");
+  }
+
+  function linkifyParticipantRefs(root){
+    if (!root) return;
+    const regex = /\bP\d+\b|\b(?:Participant|Case|Subject)\s+P?\d+\b/gi;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue || !node.nodeValue.trim()) continue;
+      const parent = node.parentElement;
+      if (!parent) continue;
+      if (parent.closest("button,a,[data-participant-link='1']")) continue;
+      if (!regex.test(node.nodeValue)) continue;
+      regex.lastIndex = 0;
+      textNodes.push(node);
+    }
+
+    textNodes.forEach(textNode => {
+      const txt = textNode.nodeValue;
+      regex.lastIndex = 0;
+      let last = 0;
+      let changed = false;
+      const frag = document.createDocumentFragment();
+      let m;
+      while ((m = regex.exec(txt)) !== null) {
+        const full = m[0];
+        const normalized = normalizeParticipantId(full);
+        if (!normalized) continue;
+        changed = true;
+        if (m.index > last) {
+          frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
+        }
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "report-participant-link";
+        btn.dataset.participantLink = "1";
+        btn.dataset.participantId = normalized;
+        btn.textContent = full;
+        frag.appendChild(btn);
+        last = m.index + full.length;
+      }
+      if (!changed) return;
+      if (last < txt.length) {
+        frag.appendChild(document.createTextNode(txt.slice(last)));
+      }
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
   }
 
   function ensureReportShell(){
@@ -188,6 +595,7 @@
 
   function buildKeyModal(){
     const hasEncrypted = !!STATE.encrypted;
+    STATE.reportType = getDatasetScanType();
     const box = document.createElement("div");
     box.className = "report-modal";
     const title = document.createElement("div");
@@ -207,6 +615,26 @@
     errText.textContent = "Passphrase is incorrect.";
 
     let keyInput = null;
+
+    const typeLbl = document.createElement("label");
+    typeLbl.textContent = "Report type";
+    typeLbl.setAttribute("for", "report-type");
+
+    const typeSelect = document.createElement("select");
+    typeSelect.id = "report-type";
+    typeSelect.className = "report-chat-input";
+    typeSelect.innerHTML = `
+      <option value="mri">MRI report</option>
+      <option value="ct">CT report</option>
+    `;
+    typeSelect.value = STATE.reportType || "mri";
+    typeSelect.addEventListener("change", () => {
+      STATE.reportType = typeSelect.value === "ct" ? "ct" : "mri";
+    });
+
+    form.appendChild(typeLbl);
+    form.appendChild(typeSelect);
+
     if (!hasEncrypted) {
       const keyLbl = document.createElement("label");
       keyLbl.textContent = "OpenAI API key";
@@ -434,6 +862,7 @@
     body.classList.remove("is-placeholder");
     const html = mdToHtml(markdown);
     body.innerHTML = `<div class="report-content">${html}</div>`;
+    linkifyParticipantRefs(body);
     STATE.lastReport = markdown;
     const copyBtn = document.getElementById("btn-report-copy");
     if (copyBtn) copyBtn.disabled = false;
@@ -639,9 +1068,10 @@
   function buildReportMessages(){
     const ctx = summarizeDataset();
     const ctxText = contextAsText(ctx);
-    const userPrompt = `${QC_USER_INSTRUCTIONS}\n\nRadQy dataset context:\n${ctxText}`;
+    const prompts = getPromptSet();
+    const userPrompt = `${prompts.userInstructions}\n\nRadQy dataset context:\n${ctxText}`;
     return [
-      { role:"system", content: QC_SYSTEM_PROMPT },
+      { role:"system", content: prompts.system },
       { role:"user",   content: userPrompt }
     ];
   }
@@ -649,6 +1079,7 @@
   function buildChatMessages(userQuestion){
     const ctx = summarizeDataset();
     const ctxText = contextAsText(ctx);
+    const prompts = getPromptSet();
     const latestReport = STATE.lastReport && STATE.lastReport.trim()
       ? STATE.lastReport.trim()
       : "(No QC report has been generated yet.)";
@@ -665,7 +1096,7 @@
       "Answer only if it relates to this dataset/QC. If a requested metric is missing (e.g., not in headers), say it is not available in the current dataset."
     ].join("\n");
     return [
-      { role:"system", content: QC_CHAT_SYSTEM_PROMPT },
+      { role:"system", content: prompts.chatSystem },
       { role:"user", content: userPrompt }
     ];
   }
@@ -712,6 +1143,17 @@
           copyBtn.textContent = "Copy failed";
           setTimeout(()=> copyBtn.textContent = "Copy", 1400);
         }
+      });
+    }
+
+    const body = document.getElementById("report-body");
+    if (body && !body.dataset.participantBindDone) {
+      body.dataset.participantBindDone = "1";
+      body.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest(".report-participant-link") : null;
+        if (!btn) return;
+        const pid = btn.dataset.participantId || "";
+        openParticipantDetail(pid);
       });
     }
   }
@@ -837,6 +1279,7 @@
 
   document.addEventListener("DOMContentLoaded", ()=>{
     ensureReportShell();
+    STATE.reportType = getDatasetScanType();
     // Keep the report closed/idle on first load; wait for the user to click
     // the Report button and confirm before prompting for API unlock.
     STATE.reportVisible = isReportVisible();
@@ -857,5 +1300,11 @@
       STATE.lastReport = "";
       setPlaceholder("Report content will appear here.");
     }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const overlay = document.getElementById("participant-detail-overlay");
+    if (overlay) overlay.classList.remove("is-open");
   });
 })();
