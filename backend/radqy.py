@@ -7,6 +7,7 @@ import sys
 import time
 import re
 from collections import defaultdict
+from functools import lru_cache
 from typing import List
 import importlib.util
 import importlib
@@ -26,6 +27,7 @@ import numpy as np
 import pandas as pd
 import pydicom
 import yaml
+import SimpleITK as sitk
 from PIL import Image as PILImage
 from pydicom.multival import MultiValue
 from pydicom.errors import InvalidDicomError
@@ -35,6 +37,11 @@ warnings.filterwarnings("ignore", message="Invalid value for VR UI.*")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def _norm(p): return str(Path(p).resolve())
+
+
+def source_row_key(path, slice_index=None) -> str:
+    """Uniquely identify a source image row; NIfTI slices share one source path."""
+    return f"{_norm(path)}::{'' if pd.isna(slice_index) else slice_index}"
 
 def first_nonempty_for_col(df_group,col):
     if col not in df_group.columns:
@@ -49,6 +56,14 @@ def first_nonempty_for_col(df_group,col):
             "nan"}:
             return x
     return ""
+
+
+def has_any_nonempty_value(df: pd.DataFrame, col: str) -> bool:
+    """Whether a metadata column contains at least one usable value."""
+    if col not in df.columns:
+        return False
+    values = df[col].astype(str).str.strip().str.lower()
+    return bool((~values.isin({"", "none", "nan"})).any())
 
 def load_segmenter_from_file(path: str):
     """
@@ -188,6 +203,103 @@ def _read_float32_slice(ds):
     inter = float(getattr(ds, "RescaleIntercept", 0.0) or 0.0)
     return arr * slope + inter
 
+
+def nifti_stem(path: Path) -> str:
+    """Return a filename stem while treating `.nii.gz` as one extension."""
+    name = path.name
+    return name[:-7] if name.lower().endswith(".nii.gz") else path.stem
+
+
+def is_nifti(path: Path) -> bool:
+    name = path.name.lower()
+    return name.endswith(".nii") or name.endswith(".nii.gz")
+
+
+def nifti_sidecar_path(path: Path) -> Path:
+    """Return the BIDS-style JSON sidecar path for a NIfTI image."""
+    if path.name.lower().endswith(".nii.gz"):
+        return path.with_suffix("").with_suffix(".json")
+    return path.with_suffix(".json")
+
+
+def read_nifti_sidecar(path: Path) -> dict:
+    """Read optional NIfTI/BIDS JSON metadata; malformed or absent sidecars are ignored."""
+    sidecar = nifti_sidecar_path(path)
+    if not sidecar.exists():
+        return {}
+    try:
+        import json
+        with sidecar.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+@lru_cache(maxsize=16)
+def load_nifti_volume(path_str: str) -> np.ndarray:
+    """Load a scalar 2-D/3-D NIfTI image as `(slice, row, column)` float32 data."""
+    image = sitk.ReadImage(path_str)
+    arr = np.asarray(sitk.GetArrayFromImage(image), dtype=np.float32)
+    if arr.ndim == 2:
+        arr = arr[None, ...]
+    if arr.ndim != 3:
+        raise ValueError(
+            f"NIfTI input must be a scalar 2-D or 3-D image; got shape {arr.shape} for {path_str}"
+        )
+    return arr
+
+
+def nifti_rows(path: Path, root: Path, tag_dict: dict) -> List[dict]:
+    """Create one pipeline row per NIfTI slice using available header/sidecar metadata."""
+    image = sitk.ReadImage(str(path))
+    arr = load_nifti_volume(str(path.resolve()))
+    spacing = image.GetSpacing()  # SimpleITK order is x, y, z
+    sidecar = read_nifti_sidecar(path)
+    meta = {abbr: "" for abbr in tag_dict}
+
+    # Preserve any DICOM-keyword-style values supplied in a BIDS JSON sidecar.
+    for abbr, tag_name in tag_dict.items():
+        value = sidecar.get(tag_name, sidecar.get(tag_name.replace(" ", ""), ""))
+        if isinstance(value, (list, tuple)):
+            if abbr == "VRX":
+                value = value[0] if value else ""
+            elif abbr == "VRY":
+                value = value[1] if len(value) > 1 else ""
+            else:
+                value = "|".join(map(str, value))
+        if value is not None:
+            meta[abbr] = str(value)
+
+    # These geometry values are present in the NIfTI header, independent of a sidecar.
+    for abbr, value in {
+        "ROW": arr.shape[1],
+        "COL": arr.shape[2],
+        "VRX": spacing[0] if len(spacing) > 0 else "",
+        "VRY": spacing[1] if len(spacing) > 1 else "",
+        "VRZ": spacing[2] if len(spacing) > 2 else "",
+    }.items():
+        if abbr in meta:
+            meta[abbr] = str(value)
+
+    patient_id = str(
+        sidecar.get("PatientID")
+        or sidecar.get("participant_id")
+        or sidecar.get("subject")
+        or nifti_stem(path)
+    )
+    common = {
+        "TopFolder": top_folder_under_root(root, path),
+        "SubFolder": path.parent.name,
+        "PatientID": patient_id,
+        "StudyInstanceUID": "",
+        "SeriesInstanceUID": str(path.resolve()),
+        "Path": str(path),
+        "SourceType": "nifti",
+    }
+    return [{**common, "InstanceNumber": index + 1, "SliceIndex": index, **meta}
+            for index in range(arr.shape[0])]
+
 def safe_name(s: str) -> str:
     """Filesystem-safe participant folder name."""
     return re.sub(r'[<>:"/\\|?*\n\r\t ]+', "_", str(s))[:200]
@@ -219,14 +331,23 @@ def dcm_to_uint8(ds):
     except Exception:
         wc, ww = None, None
 
-    if wc is not None and ww is not None and ww > 0:
-        lo, hi = wc - ww/2.0, wc + ww/2.0
+    return array_to_uint8(arr, wc, ww, getattr(ds, "PhotometricInterpretation", ""))
+
+
+def array_to_uint8(arr, window_center=None, window_width=None, photometric=""):
+    """Convert a numeric 2-D slice to uint8 using DICOM windowing or robust percentiles."""
+    arr = np.asarray(arr, dtype=np.float32)
+    if arr.ndim != 2:
+        return None
+
+    if window_center is not None and window_width is not None and window_width > 0:
+        lo, hi = window_center - window_width/2.0, window_center + window_width/2.0
     else:
         lo, hi = np.percentile(arr, 0.5), np.percentile(arr, 99.5)
 
     arr = np.clip((arr - lo) / max(hi - lo, 1e-6), 0, 1) * 255.0
 
-    if str(getattr(ds, "PhotometricInterpretation", "")).upper() == "MONOCHROME1":
+    if str(photometric).upper() == "MONOCHROME1":
         arr = 255.0 - arr
 
     return arr.astype(np.uint8)
@@ -254,11 +375,15 @@ def export_pngs_for_participants(df_source: pd.DataFrame, out_root: Path):
         for idx, row in enumerate(g_sorted.itertuples(index=False), start=1):
             dcm_path = Path(row.Path)
             try:
-                ds = pydicom.dcmread(dcm_path, stop_before_pixels=False, force=True)
+                if getattr(row, "SourceType", "dicom") == "nifti":
+                    img = array_to_uint8(
+                        load_nifti_volume(str(dcm_path.resolve()))[int(row.SliceIndex)]
+                    )
+                else:
+                    ds = pydicom.dcmread(dcm_path, stop_before_pixels=False, force=True)
+                    img = dcm_to_uint8(ds)
             except Exception:
                 continue
-
-            img = dcm_to_uint8(ds)
             if img is None:
                 continue
 
@@ -373,29 +498,43 @@ def read_headers(root: Path, tag_dict):
     for dp, _, files in os.walk(root):
         for name in files:
             p = Path(dp) / name
-            if not is_dicom(p):
+            if is_nifti(p):
+                try:
+                    nifti_slice_rows = nifti_rows(p, root, tag_dict)
+                except (OSError, RuntimeError, ValueError) as exc:
+                    if getattr(read_headers, "_verbose", False):
+                        status_print(f"[skip nifti] {p}: {exc}")
+                    continue
+                rows.extend(nifti_slice_rows)
+                count += len(nifti_slice_rows)
+                if getattr(read_headers, "_verbose", False):
+                    status_print(f"[headers] {count}: {p} ({len(nifti_slice_rows)} slices)")
                 continue
-            try:
-                ds = pydicom.dcmread(p, stop_before_pixels=True, force=True)
-            except (InvalidDicomError, OSError, PermissionError):
-                continue
-            count += 1
-            if getattr(read_headers, "_verbose", False):
-                status_print(f"[headers] {count}: {p}")
-            meta = extract_metadata(ds, tag_dict)
-            study_uid = s(getattr(ds, "StudyInstanceUID", ""))
-            series_uid = s(getattr(ds, "SeriesInstanceUID", ""))
-            inst_num = to_int_or_none(getattr(ds, "InstanceNumber", None))
-            rows.append({
-                "TopFolder": top_folder_under_root(root, p),
-                "SubFolder": p.parent.name,
-                "PatientID": s(getattr(ds, "PatientID", "")),
-                "StudyInstanceUID": study_uid,
-                "SeriesInstanceUID": series_uid,
-                "InstanceNumber": inst_num,
-                **meta,
-                "Path": str(p),
-            })
+
+            if is_dicom(p):
+                try:
+                    ds = pydicom.dcmread(p, stop_before_pixels=True, force=True)
+                except (InvalidDicomError, OSError, PermissionError):
+                    continue
+                count += 1
+                if getattr(read_headers, "_verbose", False):
+                    status_print(f"[headers] {count}: {p}")
+                meta = extract_metadata(ds, tag_dict)
+                study_uid = s(getattr(ds, "StudyInstanceUID", ""))
+                series_uid = s(getattr(ds, "SeriesInstanceUID", ""))
+                inst_num = to_int_or_none(getattr(ds, "InstanceNumber", None))
+                rows.append({
+                    "TopFolder": top_folder_under_root(root, p),
+                    "SubFolder": p.parent.name,
+                    "PatientID": s(getattr(ds, "PatientID", "")),
+                    "StudyInstanceUID": study_uid,
+                    "SeriesInstanceUID": series_uid,
+                    "InstanceNumber": inst_num,
+                    "SliceIndex": None,
+                    "SourceType": "dicom",
+                    **meta,
+                    "Path": str(p),
+                })
     return pd.DataFrame(rows), count
 
 # ---------------- Middle-% selection ----------------
@@ -420,7 +559,7 @@ def build_table(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=["#", "Participant (topfolder--subfolder--patient ID)", "NSL"])
     group_cols = ["TopFolder", "SubFolder", "PatientID"]
-    exclude = set(group_cols + ["StudyInstanceUID", "SeriesInstanceUID", "InstanceNumber", "Path"])
+    exclude = set(group_cols + ["StudyInstanceUID", "SeriesInstanceUID", "InstanceNumber", "SliceIndex", "SourceType", "Path"])
     meta_cols = [c for c in df.columns if c not in exclude]
     agg_spec = {m: "first" for m in meta_cols}
     agg_spec["Path"] = "count"
@@ -517,13 +656,6 @@ def main():
     participants = df.groupby(["TopFolder", "SubFolder", "PatientID"], dropna=False).ngroups
     status_print(f"The number of participants in the input dataset {folder_name} is {participants}.")
 
-    # Tell user how many tags will be computed per participant (YAML tags + NSL)
-    total_tags_per_participant = len(abbr_order) + 1  # +1 for NSL
-    status_print(
-        f"For each participant, {total_tags_per_participant} TAGs, "
-        f"{total_iqms_per_participant} IQMs, totaling {total_metrics_per_participant} metrics will be extracted."
-    )
-
     # Apply middle-% & sampling
     df_kept = keep_middle_percent(df, args.middle_percent)
     if args.num_samples > 1:
@@ -535,6 +667,16 @@ def main():
             .apply(lambda g: g.iloc[::args.num_samples].copy())
             .reset_index(drop=True)
         )
+
+    # Only report tags actually available in the selected input. This keeps
+    # DICOM-only fields (for example MFR/B0/TR/TE) out of NIfTI-only results.
+    abbr_order = [abbr for abbr in abbr_order if has_any_nonempty_value(df_kept, abbr)]
+    total_tags_per_participant = len(abbr_order) + 1  # +1 for NSL
+    total_metrics_per_participant = total_tags_per_participant + total_iqms_per_participant
+    status_print(
+        f"For each participant, {total_tags_per_participant} available TAGs, "
+        f"{total_iqms_per_participant} IQMs, totaling {total_metrics_per_participant} metrics will be extracted."
+    )
 
 
 
@@ -559,7 +701,10 @@ def main():
         # Build original (UNpruned) order mapping for filenames
         orig_g = df[(df["TopFolder"] == top) & (df["SubFolder"] == sub) & (df["PatientID"] == pid)].copy()
         orig_sorted = orig_g.sort_values(by=["Path"], kind="mergesort").reset_index(drop=True)
-        orig_index = {_norm(p): i for i, p in enumerate(orig_sorted["Path"].tolist(), start=1)}
+        orig_index = {
+            source_row_key(row.Path, row.SliceIndex): i
+            for i, row in enumerate(orig_sorted.itertuples(index=False), start=1)
+        }
 
         # Sort PRUNED set by Path only
         g_sorted = g.sort_values(by=["Path"], kind="mergesort").reset_index(drop=True)
@@ -588,19 +733,23 @@ def main():
         for row in g_sorted.itertuples(index=False):
             dcm_path = Path(row.Path)
             try:
-                ds = pydicom.dcmread(dcm_path, stop_before_pixels=False, force=True)
+                if getattr(row, "SourceType", "dicom") == "nifti":
+                    sl = load_nifti_volume(str(dcm_path.resolve()))[int(row.SliceIndex)]
+                    img_u8 = array_to_uint8(sl)
+                else:
+                    ds = pydicom.dcmread(dcm_path, stop_before_pixels=False, force=True)
+                    sl = _read_float32_slice(ds)
+                    img_u8 = dcm_to_uint8(ds)
             except Exception:
                 continue
             if args.verbose:
                 status_print(f"[slice] {dcm_path}")
 
-            # Thumbnail (uint8) from DICOM
-            img_u8 = dcm_to_uint8(ds)
             if img_u8 is None:
                 continue
 
-            # Filename index = original volume index (by Path)
-            orig_idx = orig_index.get(_norm(row.Path), saved_thumbs + 1)
+            # Filename index = original volume index (path plus NIfTI slice index)
+            orig_idx = orig_index.get(source_row_key(row.Path, row.SliceIndex), saved_thumbs + 1)
             fname = f"{participant_label_for_name}_{orig_idx}.png"
 
             # Save thumbnail
@@ -614,7 +763,6 @@ def main():
 
             # 2D FG/BG on this slice using make_masks (no 3D stacking)
             try:
-                sl = _read_float32_slice(ds)   # float32 HxW
                 fg, bg = segmenter_fn(sl)      # returns HxW binary masks
 
                 if args.save_fgbg:
