@@ -1,4 +1,5 @@
 import numpy as np
+from ._spatial import masked_image
 
 DESCRIPTION = (
     "GLCM Contrast: sum of squared gray-level differences weighted by co-occurrence; "
@@ -7,26 +8,19 @@ DESCRIPTION = (
 
 
 def _glcm(arr, levels=32, offsets=((0, 1), (1, 0), (1, 1), (1, -1))):
-    img = np.asarray(arr, dtype=float)
-    if img.ndim < 2:
+    img = masked_image(arr)
+    if img is None:
         return None
-    img = img[..., 0] if img.ndim > 2 else img
-    img = img[np.isfinite(img)]
-    if img.size == 0:
-        return None
-    # reshape back?
-    img = np.asarray(arr, dtype=float)
-    img = img[..., 0] if img.ndim > 2 else img
     finite_mask = np.isfinite(img)
-    if not finite_mask.any():
+    values = img[finite_mask]
+    minv, maxv = values.min(), values.max()
+    if maxv == minv:
         return None
-    img = img.copy()
-    img[~finite_mask] = 0
-    # quantize to [0, levels-1]
-    minv, maxv = np.nanmin(img), np.nanmax(img)
-    if not np.isfinite(minv) or not np.isfinite(maxv) or maxv == minv:
-        return None
-    q = np.clip(((img - minv) / (maxv - minv) * (levels - 1)).round().astype(int), 0, levels - 1)
+    q = np.zeros(img.shape, dtype=int)
+    q[finite_mask] = np.clip(
+        ((values - minv) / (maxv - minv) * (levels - 1)).round().astype(int),
+        0, levels - 1,
+    )
 
     glcm = np.zeros((levels, levels), dtype=float)
     h, w = q.shape
@@ -37,16 +31,19 @@ def _glcm(arr, levels=32, offsets=((0, 1), (1, 0), (1, 1), (1, -1))):
         x1 = w - max(0, dx)
         a = q[y0:y1, x0:x1]
         b = q[y0 + dy:y1 + dy, x0 + dx:x1 + dx]
-        np.add.at(glcm, (a, b), 1)
+        valid = (finite_mask[y0:y1, x0:x1] &
+                 finite_mask[y0 + dy:y1 + dy, x0 + dx:x1 + dx])
+        np.add.at(glcm, (a[valid], b[valid]), 1)
     total = glcm.sum()
     if total == 0:
         return None
     return glcm / total
 
 
-def glcm_contrast(fg, bg=None):
+def glcm_contrast(fg, bg=None, *, mask=None):
     name = "GLCM_CONTRAST"
-    P = _glcm(fg)
+    arr = masked_image(fg, mask)
+    P = _glcm(arr) if arr is not None else None
     if P is None:
         return name, float("nan")
     i = np.arange(P.shape[0])[:, None]

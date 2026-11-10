@@ -1,4 +1,5 @@
 import numpy as np
+from ._spatial import masked_image
 
 DESCRIPTION = (
     "GLCM Correlation: linear dependency of gray levels across offsets; "
@@ -8,9 +9,10 @@ DESCRIPTION = (
 from .glcm_contrast import _glcm
 
 
-def glcm_correlation(fg, bg=None):
+def glcm_correlation(fg, bg=None, *, mask=None):
     name = "GLCM_CORR"
-    P = _glcm(fg)
+    arr = masked_image(fg, mask)
+    P = _glcm(arr) if arr is not None else None
     if P is None:
         return name, float("nan")
 

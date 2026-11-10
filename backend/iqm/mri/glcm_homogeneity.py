@@ -1,4 +1,5 @@
 import numpy as np
+from ._spatial import masked_image
 
 DESCRIPTION = (
     "GLCM Homogeneity: weighted by inverse squared gray-level distance; "
@@ -8,9 +9,10 @@ DESCRIPTION = (
 from .glcm_contrast import _glcm
 
 
-def glcm_homogeneity(fg, bg=None):
+def glcm_homogeneity(fg, bg=None, *, mask=None):
     name = "GLCM_HOMOGENEITY"
-    P = _glcm(fg)
+    arr = masked_image(fg, mask)
+    P = _glcm(arr) if arr is not None else None
     if P is None:
         return name, float("nan")
     i = np.arange(P.shape[0])[:, None]

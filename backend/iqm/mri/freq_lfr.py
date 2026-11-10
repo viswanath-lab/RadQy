@@ -1,4 +1,5 @@
 import numpy as np
+from ._spatial import masked_image
 
 DESCRIPTION = (
     "Low-Frequency Response (LFR): mean FFT magnitude in a central low-pass disk; "
@@ -13,12 +14,13 @@ def _safe_image(img):
     arr = arr[..., 0] if arr.ndim > 2 else arr
     if not np.isfinite(arr).any():
         return None
-    return np.nan_to_num(arr, copy=False)
+    return np.nan_to_num(arr, copy=True, nan=0.0, posinf=0.0, neginf=0.0)
 
 
-def freq_lfr(fg, bg=None):
+def freq_lfr(fg, bg=None, *, mask=None):
     name = "LFR"
-    arr = _safe_image(fg)
+    arr = masked_image(fg, mask)
+    arr = _safe_image(arr) if arr is not None else None
     if arr is None:
         return name, float("nan")
 

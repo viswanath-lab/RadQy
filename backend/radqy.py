@@ -781,9 +781,13 @@ def main():
                 bg_vals = sl[bg.astype(bool)]
 
                 # IQMs (protected so mask saving still happens even if a metric fails)
-                for fn in iqm_funcs:
+                for entry in iqm_registry:
+                    fn = entry["func"]
                     try:
-                        name, measure = fn(fg_vals, bg_vals)
+                        if entry.get("spatial", False):
+                            name, measure = fn(sl, mask=fg.astype(bool))
+                        else:
+                            name, measure = fn(fg_vals, bg_vals)
                     except Exception:
                         # skip this metric for this slice
                         continue

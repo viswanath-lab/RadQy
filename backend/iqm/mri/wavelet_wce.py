@@ -1,4 +1,5 @@
 import numpy as np
+from ._spatial import masked_image
 
 DESCRIPTION = (
     "Wavelet Coefficient Energy (WCE): sum of squared high-frequency Haar coefficients; "
@@ -13,6 +14,7 @@ def _haar_highbands(img):
     arr = arr[..., 0] if arr.ndim > 2 else arr
     if min(arr.shape) < 2:
         return None
+    arr = arr[:arr.shape[0] // 2 * 2, :arr.shape[1] // 2 * 2]
     a = arr[0::2, 0::2]
     b = arr[0::2, 1::2]
     c = arr[1::2, 0::2]
@@ -25,9 +27,10 @@ def _haar_highbands(img):
     return lh, hl, hh
 
 
-def wavelet_wce(fg, bg=None):
+def wavelet_wce(fg, bg=None, *, mask=None):
     name = "WCE"
-    bands = _haar_highbands(fg)
+    arr = masked_image(fg, mask)
+    bands = _haar_highbands(arr) if arr is not None else None
     if bands is None:
         return name, float("nan")
     lh, hl, hh = bands
